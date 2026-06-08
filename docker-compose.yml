@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  xelsync-frontend:
+    build:
+      context: ./frontend-xelsync-ai
+      dockerfile: Dockerfile
+    container_name: xelsync-frontend-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    # En desarrollo local puedes mapear el volumen para hot reload, 
+    # pero este archivo usa la imagen de producción standalone por defecto.
+    # Para hot reload usarías `npm run dev` sin docker.
