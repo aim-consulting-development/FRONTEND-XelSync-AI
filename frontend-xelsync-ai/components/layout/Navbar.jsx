@@ -39,7 +39,7 @@ export default function Navbar({ onMenuClick }) {
           width={130}
           height={40}
           priority
-          className="lg:hidden"
+          className="lg:hidden w-auto h-auto"
         />
       </div>
 

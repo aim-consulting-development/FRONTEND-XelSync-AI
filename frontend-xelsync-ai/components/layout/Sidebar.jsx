@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             width={160}
             height={50}
             priority
-            className="drop-shadow-lg"
+            className="drop-shadow-lg w-auto h-auto"
           />
           <button 
             className="lg:hidden text-slate-400 hover:text-white"
