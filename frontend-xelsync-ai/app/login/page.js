@@ -48,14 +48,27 @@ try {
 
 };
 
-return ( <div className="min-h-screen flex">
-{/* Panel izquierdo */} <div className="hidden lg:flex w-1/2 bg-gradient-to-r from-slate-950 to-slate-900 text-white items-center justify-center"> <div className="max-w-md px-8"> <div className="flex justify-center mb-8"> <Image
+  return ( <div className="min-h-screen flex">
+  {/* Panel izquierdo */}
+  <div className="hidden lg:flex w-1/2 bg-slate-900 text-white items-center justify-center relative overflow-hidden">
+    {/* Imagen de fondo de aduana con opacidad */}
+    <div 
+      className="absolute inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay" 
+      style={{ backgroundImage: "url('/images/customs_bg.png')" }} 
+    />
+    {/* Degradado encima de la imagen para mantener el diseño oscuro original */}
+    <div className="absolute inset-0 z-10 bg-gradient-to-r from-slate-950/90 to-slate-900/80" />
+
+    <div className="max-w-md px-8 relative z-20">
+      <div className="flex justify-center mb-8">
+        <Image
            src="/images/XelSyncLogo4.png"
            alt="XelSync"
            width={220}
            height={80}
            priority
-         /> </div>
+         />
+      </div>
 
 
       <h2 className="text-3xl font-bold mb-12 text-center">
@@ -127,7 +140,7 @@ return ( <div className="min-h-screen flex">
         />
       </div>
 
-      <h1 className="text-3xl font-bold mb-2 text-center">
+      <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
         Iniciar Sesión
       </h1>
 
@@ -137,7 +150,7 @@ return ( <div className="min-h-screen flex">
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block mb-2 text-sm font-medium">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
             Correo Electrónico
           </label>
 
@@ -148,14 +161,14 @@ return ( <div className="min-h-screen flex">
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-400"
               placeholder="correo@empresa.com"
             />
           </div>
         </div>
 
         <div>
-          <label className="block mb-2 text-sm font-medium">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
             Contraseña
           </label>
 
@@ -166,7 +179,7 @@ return ( <div className="min-h-screen flex">
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-400"
               placeholder="********"
             />
 
@@ -181,8 +194,8 @@ return ( <div className="min-h-screen flex">
         </div>
 
         <div className="flex justify-between items-center text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" />
+          <label className="flex items-center gap-2 text-gray-700">
+            <input type="checkbox" className="rounded border-gray-300" />
             Recordar sesión
           </label>
 
@@ -203,8 +216,8 @@ return ( <div className="min-h-screen flex">
         </button>
       </form>
 
-      <div className="mt-8 border rounded-lg p-4 bg-gray-50 text-xs">
-        <p className="font-semibold mb-2">
+      <div className="mt-8 border rounded-lg p-4 bg-gray-50 text-xs text-gray-600">
+        <p className="font-semibold mb-2 text-gray-800">
           Credenciales de prueba:
         </p>
 
