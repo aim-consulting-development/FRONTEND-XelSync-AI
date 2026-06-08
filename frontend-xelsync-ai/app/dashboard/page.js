@@ -17,6 +17,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableCard } from "@/components/dashboard/SortableCard";
+import { FaExclamationTriangle, FaClock } from "react-icons/fa";
 
 export default function Dashboard() {
   const [kpis, setKpis] = useState(null);
@@ -107,7 +108,7 @@ export default function Dashboard() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
-    if (active.id !== over.id) {
+    if (active && over && active.id !== over.id) {
       setCardOrder((items) => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
@@ -167,10 +168,14 @@ export default function Dashboard() {
             ) : (
               alertas.map((alerta, index) => (
                 <div key={index} className="border border-gray-100 dark:border-slate-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">Pedimento {alerta.pedimento}</span>
-                    <span className={`text-xs px-3 py-1 font-medium rounded-full shadow-sm ${alerta.estado === 'VENCIDO' ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-500/10 dark:border-red-500/20' : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'}`}>
-                      {alerta.estado === 'VENCIDO' ? '⚠️ Vencido' : '⏳ En Riesgo'}
+                  <div className="flex justify-between items-start gap-3 mb-2">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 break-words flex-1">Pedimento {alerta.pedimento}</span>
+                    <span className={`flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 text-xs px-3 py-1 font-medium rounded-full shadow-sm ${alerta.estado === 'VENCIDO' ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-500/10 dark:border-red-500/20' : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'}`}>
+                      {alerta.estado === 'VENCIDO' ? (
+                        <><FaExclamationTriangle className="text-[10px]" /> Vencido</>
+                      ) : (
+                        <><FaClock className="text-[10px]" /> En Riesgo</>
+                      )}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
