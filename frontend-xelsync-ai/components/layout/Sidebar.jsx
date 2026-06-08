@@ -29,31 +29,39 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-slate-950 text-white min-h-screen">
+    <aside className="w-64 bg-slate-950 bg-gradient-to-b from-slate-950 to-slate-900 text-slate-300 min-h-screen border-r border-slate-800/50 shadow-2xl">
       
-    <Image
-                    src="/images/XelSyncLogo4.png"
-                    alt="XelSync"
-                    width={180}
-                    height={60}
-                    priority
-                  />
-      <nav className="mt-4">
-        {menuItems.map((item) => (
+    <div className="px-6 py-6 mb-2">
+      <Image
+        src="/images/XelSyncLogo4.png"
+        alt="XelSync"
+        width={180}
+        height={60}
+        priority
+        className="drop-shadow-lg"
+      />
+    </div>
+      <nav className="mt-2 flex flex-col gap-1 px-3">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-5 py-3 transition
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 group
             ${
-              pathname === item.href
-                ? "bg-blue-600"
-                : "hover:bg-slate-800"
+              isActive
+                ? "bg-blue-600/15 text-blue-400 shadow-[inset_0px_1px_1px_rgba(255,255,255,0.05)]"
+                : "hover:bg-slate-800/50 hover:text-white hover:translate-x-1"
             }`}
           >
-            {item.icon}
+            <span className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+              {item.icon}
+            </span>
             {item.name}
           </Link>
-        ))}
+          );
+        })}
       </nav>
     </aside>
   );

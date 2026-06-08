@@ -21,7 +21,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b dark:border-slate-800 flex items-center justify-between px-6 transition-colors">
+    <header className="h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-slate-800/50 sticky top-0 z-50 flex items-center justify-between px-6 transition-all duration-300">
       
       <Image
         src={mounted && theme === 'dark' ? "/images/XelSyncLogo4.png" : "/images/XelSyncLogo1.png"}
@@ -32,13 +32,13 @@ export default function Navbar() {
       />
 
       <div className="flex items-center gap-5">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-3 text-gray-400" />
+        <div className="relative group">
+          <FaSearch className="absolute left-3 top-3 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
 
           <input
             type="text"
             placeholder="Buscar..."
-            className="border dark:border-slate-700 bg-gray-50 dark:bg-slate-800 rounded-lg pl-10 pr-4 py-2 focus:outline-none dark:text-white"
+            className="border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-white transition-all w-64 focus:w-80"
           />
         </div>
 
