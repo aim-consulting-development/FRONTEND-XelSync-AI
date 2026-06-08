@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "XelSync AI | Automatización Inteligente Aduanera",
   description: "Plataforma premium con IA para el control y cumplimiento de pedimentos aduanales, anexos 24 y 30. Extracción automatizada y alertas SLA en tiempo real.",
   keywords: ["Aduanas", "Comercio Exterior", "IA", "Pedimentos", "Anexo 24", "Anexo 30", "XelSync"],
+  icons: {
+    icon: '/images/XelSyncLogo4.png',
+    shortcut: '/images/XelSyncLogo4.png',
+    apple: '/images/XelSyncLogo4.png',
+  },
   openGraph: {
     title: "XelSync AI | Dashboard",
     description: "Plataforma líder en cumplimiento aduanero impulsada por Inteligencia Artificial.",
@@ -25,6 +30,13 @@ export const metadata: Metadata = {
     locale: "es_MX",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f3f4f6' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
 };
 
 export default function RootLayout({
