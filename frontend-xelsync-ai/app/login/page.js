@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
 FaCheck,
 FaEnvelope,
@@ -212,12 +213,12 @@ try {
             Recordar sesión
           </label>
 
-          <a
-            href="#"
+          <Link
+            href="/forgot-password"
             className="text-blue-600 hover:text-blue-800"
           >
             ¿Olvidaste tu contraseña?
-          </a>
+          </Link>
         </div>
 
         <button
