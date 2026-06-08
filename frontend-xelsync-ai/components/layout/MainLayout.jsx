@@ -3,7 +3,7 @@ import Navbar from "./Navbar";
 
 export default function MainLayout({ children }) {
   return (
-    <div className="flex bg-gray-100 min-h-screen">
+    <div className="flex min-h-screen">
       <Sidebar />
 
       <div className="flex-1">

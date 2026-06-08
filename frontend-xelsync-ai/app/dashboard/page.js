@@ -66,7 +66,7 @@ export default function Dashboard() {
         {cards.map((card) => (
           <div
             key={card.title}
-            className="bg-white rounded-xl shadow p-5"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow p-5"
           >
             <h3 className="text-gray-500">
               {card.title}
@@ -80,7 +80,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
-        <div className="xl:col-span-2 bg-white rounded-xl shadow p-5">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow p-5">
           <h2 className="font-semibold mb-4">
             Tendencia de Pedimentos
           </h2>
@@ -90,7 +90,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-5">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
           <h2 className="font-semibold mb-4">
             Alertas SLA
           </h2>
