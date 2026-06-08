@@ -234,8 +234,8 @@ try {
           Credenciales de prueba:
         </p>
 
-        <p>Admin: admin@xelsync.com / admin123</p>
-        <p>Operador: operador@xelsync.com / operador123</p>
+        <p>Admin: admin@xelsync.com / Admin123!</p>
+        <p>Operador: operador@xelsync.com / Operador123!</p>
       </div>
     </div>
   </div>
