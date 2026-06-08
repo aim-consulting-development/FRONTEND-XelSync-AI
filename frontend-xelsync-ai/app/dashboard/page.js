@@ -1,22 +1,58 @@
+"use client";
+import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import api from "@/lib/api";
 
 export default function Dashboard() {
+  const [kpis, setKpis] = useState(null);
+  const [alertas, setAlertas] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [kpiRes, alertasRes] = await Promise.all([
+          api.get("/dashboard/kpis"),
+          api.get("/dashboard/alertas-sla")
+        ]);
+        setKpis(kpiRes.data);
+        setAlertas(alertasRes.data);
+      } catch (error) {
+        console.error("Error cargando dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-500 animate-pulse">Cargando datos del servidor...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   const cards = [
     {
       title: "Operaciones del Día",
-      value: "12",
+      value: kpis?.pedimentos_hoy || "0",
     },
     {
       title: "Valor en Aduana",
-      value: "$2,345,678",
+      value: `$${(kpis?.total_importado_usd || 0).toLocaleString()}`,
     },
     {
       title: "Impuestos Pagados",
-      value: "$456,789",
+      value: `$${(kpis?.impuestos_pagados_mxn || 0).toLocaleString()}`,
     },
     {
       title: "Pendientes",
-      value: "5",
+      value: kpis?.discrepancias_pendientes || "0",
     },
   ];
 
@@ -50,7 +86,7 @@ export default function Dashboard() {
           </h2>
 
           <div className="h-64 flex items-center justify-center text-gray-400">
-            Aquí irá la gráfica
+            Aquí irá la gráfica (Recharts)
           </div>
         </div>
 
@@ -60,17 +96,21 @@ export default function Dashboard() {
           </h2>
 
           <div className="space-y-3">
-            <div className="border rounded p-3">
-              Pedimento 6001164
-            </div>
-
-            <div className="border rounded p-3">
-              Pedimento 6000425
-            </div>
-
-            <div className="border rounded p-3">
-              Pedimento 6001125
-            </div>
+            {alertas.length === 0 ? (
+              <p className="text-sm text-gray-500">No hay pedimentos en riesgo.</p>
+            ) : (
+              alertas.map((alerta, index) => (
+                <div key={index} className="border rounded p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Pedimento {alerta.pedimento}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${alerta.estado === 'VENCIDO' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {alerta.estado}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Tiempo restante: {alerta.horas_restantes}h</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

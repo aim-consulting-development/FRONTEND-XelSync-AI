@@ -10,6 +10,8 @@ FaEyeSlash,
 } from "react-icons/fa";
 import Image from "next/image";
 
+import api from "@/lib/api";
+
 export default function LoginPage() {
 const router = useRouter();
 
@@ -34,17 +36,28 @@ if (!password.trim()) {
 try {
   setLoading(true);
 
-  // Simulación temporal de login
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // FastAPI OAuth2PasswordRequestForm requiere x-www-form-urlencoded
+  const formData = new URLSearchParams();
+  formData.append("username", email);
+  formData.append("password", password);
 
+  const response = await api.post("/auth/login", formData, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+
+  // Guardar el token en el cliente
+  localStorage.setItem("access_token", response.data.access_token);
+  
+  // Redirigir al dashboard
   router.push("/dashboard");
 } catch (error) {
   console.error(error);
-  alert("Error al iniciar sesión");
+  // Intentar extraer el mensaje del backend si existe
+  const msg = error.response?.data?.detail || "Error al iniciar sesión. Revisa tus credenciales.";
+  alert(msg);
 } finally {
   setLoading(false);
 }
-
 
 };
 
