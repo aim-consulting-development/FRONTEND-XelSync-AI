@@ -64,13 +64,13 @@ try {
   return ( <div className="min-h-screen flex">
   {/* Panel izquierdo */}
   <div className="hidden lg:flex w-1/2 bg-slate-900 text-white items-center justify-center relative overflow-hidden">
-    {/* Imagen de fondo de aduana con opacidad */}
+    {/* Imagen de fondo de aduana */}
     <div 
-      className="absolute inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay" 
+      className="absolute inset-0 z-0 opacity-50 bg-cover bg-center transition-opacity duration-1000" 
       style={{ backgroundImage: "url('/images/customs_bg.png')" }} 
     />
-    {/* Degradado encima de la imagen para mantener el diseño oscuro original */}
-    <div className="absolute inset-0 z-10 bg-gradient-to-r from-slate-950/90 to-slate-900/80" />
+    {/* Degradado encima de la imagen para mantener el diseño oscuro original pero permitir ver la imagen */}
+    <div className="absolute inset-0 z-10 bg-gradient-to-br from-slate-950/90 via-slate-900/70 to-blue-900/60" />
 
     <div className="max-w-md px-8 relative z-20">
       <div className="flex justify-center mb-8">
