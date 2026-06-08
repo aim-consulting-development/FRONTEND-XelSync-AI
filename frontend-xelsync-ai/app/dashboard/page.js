@@ -2,11 +2,53 @@
 import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import api from "@/lib/api";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableCard } from "@/components/dashboard/SortableCard";
 
 export default function Dashboard() {
   const [kpis, setKpis] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Estado para el orden de las tarjetas (usamos IDs fijos)
+  const [cardOrder, setCardOrder] = useState([
+    "operaciones", "valor", "impuestos", "pendientes"
+  ]);
+
+  // Cargar orden guardado en localStorage
+  useEffect(() => {
+    const savedOrder = localStorage.getItem("dashboardCardOrder");
+    if (savedOrder) {
+      setCardOrder(JSON.parse(savedOrder));
+    }
+  }, []);
+
+  // Configuración de los sensores de arrastre
+  // Añadimos un pequeño retraso al puntero para emular "mantener presionado"
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -37,47 +79,71 @@ export default function Dashboard() {
     );
   }
 
-  const cards = [
-    {
+  // Diccionario de tarjetas con sus valores dinámicos
+  const cardsData = {
+    operaciones: {
+      id: "operaciones",
       title: "Operaciones del Día",
       value: kpis?.pedimentos_hoy || "0",
     },
-    {
+    valor: {
+      id: "valor",
       title: "Valor en Aduana",
       value: `$${(kpis?.total_importado_usd || 0).toLocaleString()}`,
     },
-    {
+    impuestos: {
+      id: "impuestos",
       title: "Impuestos Pagados",
       value: `$${(kpis?.impuestos_pagados_mxn || 0).toLocaleString()}`,
     },
-    {
+    pendientes: {
+      id: "pendientes",
       title: "Pendientes",
       value: kpis?.discrepancias_pendientes || "0",
     },
-  ];
+  };
+
+  // Función al finalizar el arrastre
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setCardOrder((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        localStorage.setItem("dashboardCardOrder", JSON.stringify(newOrder));
+        return newOrder;
+      });
+    }
+  };
 
   return (
     <MainLayout>
-      <h1 className="text-3xl font-bold mb-6">
-        Dashboard
-      </h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {cards.map((card, index) => (
-          <div
-            key={card.title}
-            className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-700 p-6 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group"
-          >
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm tracking-wide uppercase">
-              {card.title}
-            </h3>
-
-            <p className="text-3xl font-extrabold mt-3 bg-clip-text text-transparent bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 group-hover:from-blue-600 group-hover:to-indigo-500 transition-colors duration-300">
-              {card.value}
-            </p>
-          </div>
-        ))}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-sm text-gray-500 hidden sm:block">
+          Mantén presionada una tarjeta para moverla.
+        </p>
       </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={cardOrder}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {cardOrder.map((id) => (
+              <SortableCard key={id} card={cardsData[id]} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
         <div className="xl:col-span-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-700 p-6">
