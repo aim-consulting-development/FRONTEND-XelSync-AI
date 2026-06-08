@@ -46,7 +46,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         `}
       >
         
-        <div className="px-6 py-6 mb-2 flex justify-between items-center">
+        <div className="px-5 py-6 mb-4 flex justify-between items-center">
           <Image
             src="/images/XelSyncLogo4.png"
             alt="XelSync"
@@ -56,14 +56,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             className="drop-shadow-lg w-auto h-auto"
           />
           <button 
-            className="lg:hidden text-slate-400 hover:text-white"
+            className="lg:hidden p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             onClick={() => setIsOpen(false)}
           >
             <FaTimes size={20} />
           </button>
         </div>
         
-        <nav className="mt-2 flex flex-col gap-1 px-3 overflow-y-auto flex-1">
+        <nav className="flex flex-col gap-1 px-3 overflow-y-auto flex-1 scrollbar-hide pb-6">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
