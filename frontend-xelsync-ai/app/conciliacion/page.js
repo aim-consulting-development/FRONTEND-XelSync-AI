@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import api from "@/lib/api";
 import {
   FaUpload,
   FaPlay,
@@ -14,116 +15,124 @@ import {
   FaSync,
   FaCalendarAlt,
   FaFilter,
-  FaEye,
+  FaSpinner,
+  FaTimesCircle,
 } from "react-icons/fa";
 
+const SEVERIDAD_COLORS = {
+  ALTA: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+  MEDIA: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
+  BAJA: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+};
+
 export default function ConciliacionPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState("2026-06");
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    new Date().toISOString().slice(0, 7) // YYYY-MM
+  );
   const [operationType, setOperationType] = useState("todas");
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-
-  const stats = [
-    {
-      title: "Conciliaciones",
-      value: "24",
-      icon: <FaCheckCircle className="text-green-500" size={30} />,
-      color: "text-green-500",
-    },
-    {
-      title: "Diferencias",
-      value: "11",
-      icon: <FaExclamationTriangle className="text-red-500" size={30} />,
-      color: "text-red-500",
-    },
-    {
-      title: "Procesadas",
-      value: "98%",
-      icon: <FaCheckCircle className="text-green-500" size={30} />,
-      color: "text-green-600",
-    },
-    {
-      title: "Última Ejecución",
-      value: "Hoy",
-      icon: <FaClock className="text-blue-500" size={30} />,
-      color: "text-blue-500",
-    },
-  ];
-
-  const historial = [
-    {
-      periodo: "Mayo 2026",
-      fecha: "05/06/2026",
-      diferencias: 3,
-      estado: "Completado",
-      estadoColor: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-      reporte: true,
-    },
-    {
-      periodo: "Abril 2026",
-      fecha: "02/05/2026",
-      diferencias: 0,
-      estado: "Completado",
-      estadoColor: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-      reporte: true,
-    },
-    {
-      periodo: "Marzo 2026",
-      fecha: "04/04/2026",
-      diferencias: 8,
-      estado: "Revisión",
-      estadoColor: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
-      reporte: false,
-    },
-    {
-      periodo: "Febrero 2026",
-      fecha: "05/03/2026",
-      diferencias: 12,
-      estado: "Pendiente",
-      estadoColor: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400",
-      reporte: false,
-    },
-    {
-      periodo: "Enero 2026",
-      fecha: "04/02/2026",
-      diferencias: 5,
-      estado: "Completado",
-      estadoColor: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-      reporte: true,
-    },
-  ];
-
-  const handleExecute = () => {
-    setIsProcessing(true);
-    // Simular proceso de conciliación
-    setTimeout(() => {
-      setIsProcessing(false);
-      alert("Conciliación ejecutada correctamente");
-    }, 3000);
-  };
+  const [uploadedFileObj, setUploadedFileObj] = useState(null);
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setUploadedFile(file.name);
-      alert(`Archivo ${file.name} cargado correctamente`);
+    if (!file) return;
+    if (!file.name.endsWith(".zip") && !file.name.endsWith(".asc")) {
+      setError("Solo se aceptan archivos .zip o .asc del SAT.");
+      return;
+    }
+    setUploadedFile(file.name);
+    setUploadedFileObj(file);
+    setError(null);
+    setResultado(null);
+  };
+
+  const handleExecute = async () => {
+    if (!uploadedFileObj) {
+      setError("Debes seleccionar un archivo SAT (.zip o .asc) antes de ejecutar.");
+      return;
+    }
+    setIsProcessing(true);
+    setError(null);
+    setResultado(null);
+    try {
+      const formData = new FormData();
+      formData.append("archivo_sat", uploadedFileObj);
+      formData.append("periodo", selectedPeriod);
+      const res = await api.post("/conciliacion/ejecutar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setResultado(res.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Error ejecutando la conciliación. Verifica el archivo e intenta nuevamente.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDownloadReport = (periodo) => {
-    console.log(`Descargando reporte de ${periodo}`);
-    alert(`Descargando reporte de ${periodo}`);
-  };
+  const stats = resultado
+    ? [
+        {
+          title: "Total Pedimentos",
+          value: resultado.total_pedimentos,
+          icon: <FaFileExcel className="text-blue-500" size={28} />,
+          color: "text-blue-500",
+        },
+        {
+          title: "Conciliados",
+          value: resultado.conciliados,
+          icon: <FaCheckCircle className="text-green-500" size={28} />,
+          color: "text-green-600",
+        },
+        {
+          title: "Con Discrepancias",
+          value: resultado.con_discrepancias,
+          icon: <FaExclamationTriangle className="text-red-500" size={28} />,
+          color: "text-red-600",
+        },
+        {
+          title: "No Encontrados",
+          value: resultado.no_encontrados,
+          icon: <FaTimesCircle className="text-orange-500" size={28} />,
+          color: "text-orange-600",
+        },
+      ]
+    : [
+        {
+          title: "Sin ejecutar",
+          value: "—",
+          icon: <FaSync className="text-gray-400" size={28} />,
+          color: "text-gray-400",
+        },
+        {
+          title: "Selecciona un archivo SAT",
+          value: "—",
+          icon: <FaUpload className="text-gray-400" size={28} />,
+          color: "text-gray-400",
+        },
+        {
+          title: "y presiona Ejecutar",
+          value: "—",
+          icon: <FaPlay className="text-gray-400" size={28} />,
+          color: "text-gray-400",
+        },
+        {
+          title: "para ver resultados",
+          value: "—",
+          icon: <FaChartLine className="text-gray-400" size={28} />,
+          color: "text-gray-400",
+        },
+      ];
 
   return (
     <MainLayout>
       {/* Encabezado */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Conciliación SAT
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Comparación automática entre sistema y SAT
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Conciliación SAT</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
+          Comparación automática entre el sistema y los reportes del SAT
         </p>
       </div>
 
@@ -136,16 +145,10 @@ export default function ConciliacionPage() {
           >
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  {stat.title}
-                </p>
-                <h2 className={`text-3xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{stat.title}</p>
+                <h2 className={`text-3xl font-bold ${stat.color}`}>{stat.value}</h2>
               </div>
-              <div className="p-2 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                {stat.icon}
-              </div>
+              <div className="p-2 bg-gray-50 dark:bg-slate-700 rounded-lg">{stat.icon}</div>
             </div>
           </div>
         ))}
@@ -154,299 +157,200 @@ export default function ConciliacionPage() {
       {/* Configuración + Estado */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Configuración */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 transition-all duration-300">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <FaSync className="text-blue-500" />
               Configuración de Conciliación
             </h2>
           </div>
-          <div className="p-6">
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Periodo
-                </label>
-                <div className="relative">
-                  <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="month"
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-                  />
-                </div>
+          <div className="p-6 space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Periodo</label>
+              <div className="relative">
+                <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="month"
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
+                />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tipo de Operación
-                </label>
-                <div className="relative">
-                  <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                  <select
-                    value={operationType}
-                    onChange={(e) => setOperationType(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-                  >
-                    <option value="todas">Todas</option>
-                    <option value="importacion">Importación</option>
-                    <option value="exportacion">Exportación</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                onClick={handleExecute}
-                disabled={isProcessing}
-                className={`
-                  w-full py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200
-                  ${isProcessing 
-                    ? "bg-gray-400 cursor-not-allowed" 
-                    : "bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] shadow-md"}
-                  text-white font-medium
-                `}
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <FaPlay />
-                    Ejecutar Conciliación
-                  </>
-                )}
-              </button>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Operación</label>
+              <div className="relative">
+                <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <select
+                  value={operationType}
+                  onChange={(e) => setOperationType(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
+                >
+                  <option value="todas">Todas</option>
+                  <option value="importacion">Importación</option>
+                  <option value="exportacion">Exportación</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleExecute}
+              disabled={isProcessing || !uploadedFileObj}
+              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 text-white font-medium ${
+                isProcessing || !uploadedFileObj
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] shadow-md"
+              }`}
+            >
+              {isProcessing ? (
+                <>
+                  <FaSpinner className="animate-spin" />
+                  Procesando conciliación...
+                </>
+              ) : (
+                <>
+                  <FaPlay />
+                  Ejecutar Conciliación
+                </>
+              )}
+            </button>
+
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
+                  <FaExclamationTriangle />
+                  {error}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Estado del Proceso */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 transition-all duration-300">
+        {/* Carga de Archivo SAT */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <FaChartLine className="text-green-500" />
-              Estado del Proceso
+              <FaUpload className="text-purple-500" />
+              Archivo SAT
             </h2>
           </div>
           <div className="p-6">
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between mb-2 text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">Extracción SAT</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">100%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-2 bg-green-500 rounded-full w-full transition-all duration-500"></div>
-                </div>
-              </div>
+            <div
+              className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center transition-all duration-200 ${
+                uploadedFile
+                  ? "border-green-500 bg-green-50 dark:bg-green-900/10"
+                  : "border-gray-300 dark:border-slate-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+              }`}
+            >
+              <input
+                type="file"
+                accept=".zip,.asc"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="file-upload-sat"
+              />
+              <FaUpload
+                size={44}
+                className={`mb-4 ${uploadedFile ? "text-green-500" : "text-gray-400 dark:text-gray-500"}`}
+              />
 
-              <div>
-                <div className="flex justify-between mb-2 text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">Comparación</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">75%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-2 bg-blue-500 rounded-full w-3/4 transition-all duration-500"></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-2 text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">Generación Reporte</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">40%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-2 bg-yellow-500 rounded-full w-2/5 transition-all duration-500"></div>
-                </div>
-              </div>
-
-              {isProcessing && (
-                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 animate-pulse">
-                    Procesando conciliación...
+              {uploadedFile ? (
+                <>
+                  <p className="font-medium text-gray-900 dark:text-white text-base mb-1">{uploadedFile}</p>
+                  <p className="text-sm text-green-600 dark:text-green-400 mb-4">Archivo listo para procesar</p>
+                  <div className="flex gap-3">
+                    <label
+                      htmlFor="file-upload-sat"
+                      className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm"
+                    >
+                      Cambiar archivo
+                    </label>
+                    <button
+                      onClick={() => { setUploadedFile(null); setUploadedFileObj(null); setResultado(null); setError(null); }}
+                      className="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-all text-sm"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">Arrastra tu archivo SAT aquí</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">o</p>
+                  <label
+                    htmlFor="file-upload-sat"
+                    className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all inline-flex items-center gap-2 font-medium"
+                  >
+                    <FaUpload size={14} />
+                    Seleccionar archivo
+                  </label>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                    Formatos aceptados: .zip, .asc (reporte SAT)
                   </p>
-                </div>
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Carga de archivos - Versión alternativa */}
-<div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 transition-all duration-300 mb-8">
-  <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
-    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-      <FaUpload className="text-purple-500" />
-      Archivos SAT
-    </h2>
-  </div>
-  <div className="p-8">
-    <div className="flex flex-col items-center justify-center text-center">
-      <div
-        className={`
-          w-full
-          border-2 border-dashed rounded-xl p-12
-          transition-all duration-200
-          flex flex-col items-center justify-center
-          ${uploadedFile 
-            ? "border-green-500 bg-green-50 dark:bg-green-900/10" 
-            : "border-gray-300 dark:border-slate-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10"}
-        `}
-      >
-        <input
-          type="file"
-          accept=".xlsx,.csv,.txt"
-          onChange={handleFileUpload}
-          className="hidden"
-          id="file-upload"
-        />
-        <FaUpload
-          size={48}
-          className={`mb-4 ${uploadedFile ? "text-green-500" : "text-gray-400 dark:text-gray-500"}`}
-        />
-        
-        {uploadedFile ? (
-          <>
-            <p className="font-medium text-gray-900 dark:text-white text-base">
-              {uploadedFile}
-            </p>
-            <div className="flex gap-3 mt-4">
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 text-sm"
-              >
-                Cambiar archivo
-              </label>
-              <button
-                onClick={() => setUploadedFile(null)}
-                className="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-all duration-200 text-sm"
-              >
-                Eliminar
-              </button>
+      {/* Resultados de discrepancias */}
+      {resultado && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <FaExclamationTriangle className="text-orange-500" />
+              Discrepancias Detectadas ({resultado.discrepancias?.length || 0})
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {resultado.sin_discrepancias} sin diferencias · {resultado.no_encontrados} no encontrados
+              </span>
             </div>
-          </>
-        ) : (
-          <>
-            <p className="text-gray-700 dark:text-gray-300 mb-2">
-              Arrastra y suelta tu archivo aquí
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              o
-            </p>
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 inline-flex items-center gap-2 font-medium"
-            >
-              <FaUpload size={14} />
-              Seleccionar archivo
-            </label>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-              Formatos soportados: XLSX, CSV, TXT (Máx. 10MB)
-            </p>
-          </>
-        )}
-      </div>
-    </div>
-  </div>
-</div>
-
-      {/* Historial */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden transition-all duration-300">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Historial de Conciliaciones
-          </h2>
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            Ver todos
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-slate-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Periodo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Diferencias
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Reporte
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-              {historial.map((item, index) => (
-                <tr
-                  key={index}
-                  className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors duration-200"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {item.periodo}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                    {item.fecha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`text-sm font-semibold ${
-                        item.diferencias > 0
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-green-600 dark:text-green-400"
-                      }`}
-                    >
-                      {item.diferencias}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.estadoColor}`}>
-                      {item.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <button
-                      onClick={() => handleDownloadReport(item.periodo)}
-                      disabled={!item.reporte}
-                      className={`
-                        inline-flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all duration-200
-                        ${item.reporte 
-                          ? "text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20" 
-                          : "text-gray-400 dark:text-gray-600 cursor-not-allowed"}
-                      `}
-                    >
-                      <FaFileExcel />
-                      {item.reporte ? "Exportar" : "Pendiente"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer del historial */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">
-              Mostrando {historial.length} registros
-            </span>
-            <button className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-              <FaDownload size={12} />
-              Exportar historial
-            </button>
           </div>
+
+          {resultado.discrepancias && resultado.discrepancias.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-slate-900">
+                  <tr>
+                    {["Pedimento", "Campo", "Valor Sistema", "Valor SAT", "Diferencia", "Severidad"].map((h) => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                  {resultado.discrepancias.map((d, i) => (
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                      <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-white">{d.pedimento}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{d.campo}</td>
+                      <td className="px-6 py-4 font-mono text-sm text-blue-600 dark:text-blue-400">{d.valor_interno}</td>
+                      <td className="px-6 py-4 font-mono text-sm text-purple-600 dark:text-purple-400">{d.valor_sat}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{d.diferencia}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${SEVERIDAD_COLORS[d.severidad] || "bg-gray-100 text-gray-600"}`}>
+                          {d.severidad}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-10 text-center">
+              <FaCheckCircle className="text-4xl text-green-500 mx-auto mb-3" />
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">¡Sin discrepancias!</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Todos los pedimentos conciliados coinciden con el SAT.
+              </p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </MainLayout>
   );
 }
