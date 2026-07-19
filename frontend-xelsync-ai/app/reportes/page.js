@@ -99,8 +99,8 @@ export default function Reportes() {
                 onChange={(e) => setPeriodo(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
               >
-                <option value="mes-actual">Mes Actual (Junio 2026)</option>
-                <option value="mes-anterior">Mes Anterior (Mayo 2026)</option>
+                <option value="mes-actual">Mes Actual (Julio 2026)</option>
+                <option value="mes-anterior">Mes Anterior (Junio 2026)</option>
                 <option value="trimestre">Trimestre Actual</option>
                 <option value="semestre">Semestre Actual</option>
                 <option value="anio">Año 2026</option>
@@ -125,7 +125,7 @@ export default function Reportes() {
       {/* Resumen de Operaciones */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Resumen de Operaciones - Junio 2026
+          Resumen de Operaciones - Julio 2026
         </h2>
 
         {/* Stats Cards */}
