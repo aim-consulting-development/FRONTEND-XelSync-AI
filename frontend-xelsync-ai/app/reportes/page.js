@@ -1,249 +1,189 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import api from "@/lib/api";
 import {
-  FaFileExcel,
-  FaCalendarAlt,
+  FaChartBar,
   FaDownload,
-  FaChartLine,
-  FaFileInvoice,
-  FaDollarSign,
-  FaClock,
+  FaFilter,
+  FaSpinner,
+  FaCalendarAlt,
 } from "react-icons/fa";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend,
+  Cell,
+} from "recharts";
 
 export default function Reportes() {
-  const [reporteType, setReporteType] = useState("operaciones");
-  const [periodo, setPeriodo] = useState("mes-actual");
+  const [kpis, setKpis] = useState(null);
+  const [reportData, setReportData] = useState({ trend_data: [], sla_data: [] });
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    {
-      title: "Total de Pedimentos",
-      value: "210",
-      icon: <FaFileInvoice />,
-      color: "bg-blue-500",
-    },
-    {
-      title: "Valor Total USD",
-      value: "$3.83M",
-      icon: <FaDollarSign />,
-      color: "bg-green-500",
-    },
-  ];
+  // Filtros
+  const [dateRange, setDateRange] = useState("mes"); // semana, mes, año
 
-  
-  const operacionesData = [
-    {
-      tipo: "IMPORTACIÓN",
-      cantidad: 142,
-      valorUSD: "$2,845,678.58",
-      impuestosMXN: "$1,245,898.25",
-      promSLA: "32.5",
-    },
-    {
-      tipo: "EXPORTACIÓN",
-      cantidad: 68,
-      valorUSD: "$985,432.10",
-      impuestosMXN: "-",
-      promSLA: "28.3",
-    },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
 
-  const handleExportExcel = () => {
-    // Lógica para exportar a Excel
-    console.log("Exportando a Excel...");
-    alert("Exportando a Excel...");
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [kpisRes, reportRes] = await Promise.all([
+        api.get("/dashboard/kpis"),
+        api.get(`/dashboard/reportes?rango=${dateRange}`)
+      ]);
+      setKpis(kpisRes.data);
+      setReportData(reportRes.data);
+    } catch (error) {
+      console.error("Error cargando datos de reportes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const trendData = reportData.trend_data;
+  const slaData = reportData.sla_data;
+
+  const handleExport = () => {
+    alert("Funcionalidad de exportación a Excel/CSV estará disponible pronto.");
   };
 
   return (
     <MainLayout>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Reportes
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Análisis y exportación de datos operativos
-        </p>
-      </div>
-
-      {/* Filtros */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700 mb-6 transition-all duration-300">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Tipo de Reporte */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tipo de Reporte
-            </label>
-            <select
-              value={reporteType}
-              onChange={(e) => setReporteType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-            >
-              <option value="operaciones">Operaciones por Periodo</option>
-              <option value="impuestos">Impuestos y Contribuciones</option>
-              <option value="cumplimiento">Cumplimiento SLA</option>
-              <option value="productos">Productos más Importados</option>
-            </select>
-          </div>
-
-          {/* Periodo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Periodo
-            </label>
-            <div className="relative">
-              <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-              <select
-                value={periodo}
-                onChange={(e) => setPeriodo(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-              >
-                <option value="mes-actual">Mes Actual (Julio 2026)</option>
-                <option value="mes-anterior">Mes Anterior (Junio 2026)</option>
-                <option value="trimestre">Trimestre Actual</option>
-                <option value="semestre">Semestre Actual</option>
-                <option value="anio">Año 2026</option>
-                <option value="personalizado">Personalizado</option>
-              </select>
-            </div>
-          </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reportes y Métricas</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Visualiza el rendimiento operativo, valor en aduana y cumplimiento de SLAs.
+          </p>
         </div>
-
-        {/* Botón Exportar */}
-        <div className="mt-6 flex justify-end">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-slate-700 p-1 flex">
+            {["Semana", "Mes", "Año"].map((r) => (
+              <button
+                key={r}
+                onClick={() => setDateRange(r.toLowerCase())}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  dateRange === r.toLowerCase()
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
           <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md"
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-all shadow-sm"
           >
-            <FaFileExcel className="text-lg" />
-            Exportar a Excel
+            <FaDownload /> Exportar
           </button>
         </div>
       </div>
 
-      {/* Resumen de Operaciones */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Resumen de Operaciones - Julio 2026
-        </h2>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <FaSpinner className="animate-spin text-4xl text-blue-500" />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Tarjetas Superiores */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+              <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Valor Total en Aduana</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                ${(kpis?.total_importado_usd || 0).toLocaleString()} USD
+              </p>
+              <p className="text-sm text-emerald-500 mt-2 flex items-center gap-1">
+                +12% vs periodo anterior
+              </p>
+            </div>
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+              <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Impuestos Pagados</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                ${(kpis?.impuestos_pagados_mxn || 0).toLocaleString()} MXN
+              </p>
+              <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                -3% vs periodo anterior
+              </p>
+            </div>
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+              <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Operaciones Exitosas</h3>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {kpis?.pedimentos_hoy || 0}
+              </p>
+              <p className="text-sm text-emerald-500 mt-2 flex items-center gap-1">
+                +5% vs periodo anterior
+              </p>
+            </div>
+          </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
-                    {stat.title}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`${stat.color} p-3 rounded-full text-white text-xl`}>
-                  {stat.icon}
-                </div>
+          {/* Gráficas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tendencia de Valor en Aduana */}
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+              <h2 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Tendencia de Importaciones (USD)</h2>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                    />
+                    <Area type="monotone" dataKey="valor" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValor)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Tabla de Operaciones */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden transition-all duration-300">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-              <thead className="bg-gray-50 dark:bg-slate-900">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    TIPO OPERACIÓN
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    CANTIDAD
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    VALOR USD
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    IMPUESTOS MXN
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    PROM. SLA (HRS)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                {operacionesData.map((item, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors duration-200"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item.tipo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      {item.cantidad}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      {item.valorUSD}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      {item.impuestosMXN}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      <div className="flex items-center gap-1">
-                        <FaClock className="text-blue-500 dark:text-blue-400" />
-                        {item.promSLA}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficos adicionales (opcional) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700 transition-all duration-300">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <FaChartLine className="text-blue-500" />
-            Tendencia de Operaciones
-          </h3>
-          <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-slate-900 rounded-lg">
-            Aquí irá la gráfica de tendencias
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700 transition-all duration-300">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-            Top Productos
-          </h3>
-          <div className="space-y-3">
-            {[
-              { producto: "Circuitos integrados", cantidad: 450, valor: "$2.1M" },
-              { producto: "Maquinaria industrial", cantidad: 120, valor: "$1.2M" },
-              { producto: "Componentes electrónicos", cantidad: 890, valor: "$890K" },
-              { producto: "Materias primas", cantidad: 340, valor: "$450K" },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700"
-              >
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{item.producto}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Cantidad: {item.cantidad}</p>
-                </div>
-                <p className="font-semibold text-green-600 dark:text-green-400">{item.valor}</p>
+            {/* Rendimiento SLA */}
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+              <h2 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Cumplimiento de SLAs</h2>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={slaData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      cursor={{fill: 'transparent'}}
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                    />
+                    <Bar dataKey="cantidad" radius={[6, 6, 0, 0]}>
+                      {
+                        slaData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : index === 1 ? '#f59e0b' : '#ef4444'} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </MainLayout>
   );
 }
