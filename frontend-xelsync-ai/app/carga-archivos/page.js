@@ -30,7 +30,7 @@ const ALLOWED_TYPES = [
   "text/csv",
   "application/octet-stream",
 ];
-const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".txt", ".csv", ".asc"];
+const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".txt", ".csv", ".asc", ".err"];
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
