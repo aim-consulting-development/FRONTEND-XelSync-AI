@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import api from "@/lib/api";
 import {
@@ -80,7 +82,16 @@ export default function CargaArchivos() {
   const [showZipWarningModal, setShowZipWarningModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
   const pollingRef = useRef(null);
+  const { isAdmin, isOperador, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin && !isOperador) {
+      router.push("/dashboard");
+    }
+  }, [authLoading, isAdmin, isOperador, router]);
 
   // ─── Validación de archivos ───────────────────────────
   const validateFile = (file) => {
@@ -288,6 +299,10 @@ export default function CargaArchivos() {
     f.nombre_original?.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
+  if (authLoading || (!isAdmin && !isOperador)) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><FaSpinner className="animate-spin text-4xl text-blue-500" /></div>;
+  }
+
   // ─── Renderizado ───────────────────────────────────────
   return (
     <MainLayout>
@@ -310,8 +325,7 @@ export default function CargaArchivos() {
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-10 transition-all duration-300 group
+        className={`relative rounded-2xl border-2 border-dashed p-10 transition-all duration-300 group
           ${
             isDragActive
               ? "border-blue-500 bg-blue-500/5 dark:bg-blue-500/10 scale-[1.01] shadow-xl shadow-blue-500/10"
@@ -332,6 +346,19 @@ export default function CargaArchivos() {
           className="hidden"
           id="file-upload-input"
         />
+        <input
+          ref={folderInputRef}
+          type="file"
+          webkitdirectory=""
+          directory=""
+          multiple
+          onChange={(e) => {
+            if (e.target.files?.length) addFiles(e.target.files);
+            e.target.value = "";
+          }}
+          className="hidden"
+          id="folder-upload-input"
+        />
 
         <div className="flex flex-col items-center text-center">
           <div
@@ -349,9 +376,23 @@ export default function CargaArchivos() {
           <p className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">
             {isDragActive
               ? "Suelta los archivos aquí"
-              : "Arrastra tus archivos o haz clic para seleccionar"}
+              : "Arrastra tus archivos o elige una opción"}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex gap-4 mt-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              Seleccionar Archivos
+            </button>
+            <button
+              onClick={() => folderInputRef.current?.click()}
+              className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+            >
+              Seleccionar Carpeta
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
             PDF, ZIP, TXT, CSV, ASC — Máximo {MAX_FILE_SIZE_MB}MB por archivo
           </p>
 

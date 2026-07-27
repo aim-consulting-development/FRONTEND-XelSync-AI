@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import api from "@/lib/api";
 import {
@@ -38,10 +40,20 @@ export default function Usuarios() {
   });
   const [nuevoClienteCartera, setNuevoClienteCartera] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  const { isAdmin, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    fetchUsuarios();
-  }, []);
+    if (!authLoading && !isAdmin) {
+      router.push("/dashboard");
+    }
+  }, [authLoading, isAdmin, router]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsuarios();
+    }
+  }, [isAdmin]);
 
   const fetchUsuarios = async () => {
     try {
@@ -157,6 +169,10 @@ export default function Usuarios() {
       u.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (authLoading || !isAdmin) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><FaSpinner className="animate-spin text-4xl text-blue-500" /></div>;
+  }
 
   return (
     <MainLayout>

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
@@ -36,6 +38,17 @@ export default function ConciliacionPage() {
   const [uploadedFileObj, setUploadedFileObj] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
+
+  const { user, isAdmin, isOperador, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  const isStrictAuditor = user?.rol === "AUDITOR";
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin && !isOperador && !isStrictAuditor) {
+      router.push("/dashboard");
+    }
+  }, [authLoading, isAdmin, isOperador, isStrictAuditor, router]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -126,6 +139,10 @@ export default function ConciliacionPage() {
           color: "text-gray-400",
         },
       ];
+
+  if (authLoading || (!isAdmin && !isOperador && !isStrictAuditor)) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><FaSpinner className="animate-spin text-4xl text-blue-500" /></div>;
+  }
 
   return (
     <MainLayout>
