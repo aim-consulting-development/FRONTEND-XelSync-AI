@@ -95,7 +95,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Mi Cartera",
       href: "/cartera",
       icon: <FaUsers />,
-      roles: ["OPERADOR"],
+      roles: ["ADMIN", "OPERADOR"],
     },
     {
       name: "Configuración",

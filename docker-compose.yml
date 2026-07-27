@@ -3,17 +3,12 @@ services:
     build:
       context: ./frontend-xelsync-ai
       dockerfile: Dockerfile
-      target: deps
+      args:
+        - NEXT_PUBLIC_API_URL=http://192.168.1.72:8000/api/v1
     container_name: xelsync-frontend-app
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-    volumes:
-      - ./frontend-xelsync-ai:/app
-      - /app/node_modules
-      - /app/.next
-    command: npm run dev
-
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://192.168.1.72:8000/api/v1
