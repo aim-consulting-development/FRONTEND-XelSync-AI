@@ -67,6 +67,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       roles: ["ADMIN", "OPERADOR", "AUDITOR", "SOLO_LECTURA"],
     },
     {
+      name: "Catálogos Pendientes",
+      href: "/catalogos-pendientes",
+      icon: <FaShieldAlt />,
+      roles: ["ADMIN", "OPERADOR", "AUDITOR"],
+    },
+    {
       name: "Conciliación SAT",
       href: "/conciliacion",
       icon: <FaBalanceScale />,
