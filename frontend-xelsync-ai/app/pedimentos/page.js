@@ -59,7 +59,19 @@ export default function PedimentosPage() {
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
   const [tipoFilter, setTipoFilter] = useState("");
+  const [operadorFilter, setOperadorFilter] = useState("");
   const [orden, setOrden] = useState("desc");
+
+  const [operadores, setOperadores] = useState([]);
+  const { isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (isAdmin) {
+      api.get("/usuarios?limit=100").then(res => {
+        setOperadores(res.data.items.filter(u => u.rol === "OPERADOR"));
+      }).catch(err => console.error(err));
+    }
+  }, [isAdmin]);
 
   const fetchPedimentos = useCallback(async () => {
     setLoading(true);
@@ -71,12 +83,18 @@ export default function PedimentosPage() {
       if (search) params.append("q", search);
       if (estadoFilter) params.append("estado", estadoFilter);
       if (tipoFilter) params.append("tipo_operacion", tipoFilter);
+      if (isAdmin && operadorFilter) params.append("operador_id", operadorFilter);
       params.append("orden", orden);
 
       const res = await api.get(`/pedimentos?${params.toString()}`);
-      setItems(res.data.items || []);
+      const fetchedItems = res.data.items || [];
+      setItems(fetchedItems);
       setTotal(res.data.total || 0);
       setTotalPages(res.data.pages || 1);
+
+      // Guardar IDs para navegación Anterior/Siguiente en la vista de detalle
+      const ids = fetchedItems.map(item => item.id);
+      sessionStorage.setItem("pedimentosListIds", JSON.stringify(ids));
     } catch (err) {
       console.error(err);
       setItems([]);
@@ -139,6 +157,17 @@ export default function PedimentosPage() {
               <option value="">Todos los Tipos</option>
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+            
+            {isAdmin && (
+              <select
+                value={operadorFilter}
+                onChange={(e) => { setOperadorFilter(e.target.value); setPage(1); }}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos los Operadores</option>
+                {operadores.map(op => <option key={op.id} value={op.id}>{op.nombre}</option>)}
+              </select>
+            )}
             
             <select
               value={orden}

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FaFileInvoice, FaListUl, FaHashtag, FaBuilding, FaBox, FaCaretDown, FaCaretRight } from "react-icons/fa";
+import { FaFileInvoice, FaListUl, FaHashtag, FaBuilding, FaBox, FaCaretDown, FaCaretRight, FaCheck } from "react-icons/fa";
 
-export default function TabsRevision({ pedimentoData, onChange }) {
+export default function TabsRevision({ pedimentoData, onChange, errores = [], validatedFields = {}, onValidateField }) {
   const [activeTab, setActiveTab] = useState("encabezado");
 
   const tabs = [
@@ -15,15 +15,45 @@ export default function TabsRevision({ pedimentoData, onChange }) {
 
   // Helper to safely render inputs
   const renderInput = (key, label, value) => {
+    const error = errores.find(e => e.campo === key);
+    const isValidated = validatedFields[key];
+    const isError = !!error;
+    
+    // Status color classes
+    let inputClasses = "w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none transition-all ";
+    if (isError) {
+      inputClasses += "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-2 focus:ring-red-500";
+    } else if (isValidated) {
+      inputClasses += "border-green-500 bg-green-50 dark:bg-green-900/20 focus:ring-2 focus:ring-green-500";
+    } else {
+      inputClasses += "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 focus:ring-2 focus:ring-yellow-500"; // Extracted default
+    }
+
     return (
-      <div key={key} className="flex flex-col">
-        <label className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1 truncate" title={label}>{label}</label>
+      <div key={key} className="flex flex-col relative group">
+        <label className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1 truncate flex justify-between items-center" title={label}>
+          <span>{label}</span>
+          {!isValidated && !isError && onValidateField && (
+            <button 
+              onClick={() => onValidateField(key)}
+              className="text-green-600 hover:text-green-700 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Marcar como validado"
+            >
+              <FaCheck size={12} />
+            </button>
+          )}
+        </label>
         <input 
           type="text"
           value={value || ""}
           onChange={(e) => onChange(key, e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          className={inputClasses}
         />
+        {isError && (
+          <span className="text-[10px] text-red-500 mt-1 truncate" title={error.mensaje}>
+            {error.mensaje}
+          </span>
+        )}
       </div>
     );
   };

@@ -39,8 +39,23 @@ export default function PedimentoDetalle() {
   const [rawText, setRawText] = useState(null);
   const [pdfError, setPdfError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [validatedFields, setValidatedFields] = useState({});
+
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [pedimentosList, setPedimentosList] = useState([]);
 
   useEffect(() => {
+    const storedIds = sessionStorage.getItem("pedimentosListIds");
+    if (storedIds) {
+      try {
+        const ids = JSON.parse(storedIds);
+        setPedimentosList(ids);
+        const idx = ids.findIndex(item => String(item) === String(id));
+        setCurrentIndex(idx);
+      } catch (e) {
+        console.error("Error reading stored pedimentos list");
+      }
+    }
     fetchPedimento();
   }, [id]);
 
@@ -152,6 +167,11 @@ export default function PedimentoDetalle() {
 
   const handleFieldChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+    setValidatedFields(prev => ({ ...prev, [key]: true })); // Validate on edit
+  };
+
+  const handleValidateField = (key) => {
+    setValidatedFields(prev => ({ ...prev, [key]: true }));
   };
 
   const handleGuardarBorrador = async () => {
@@ -200,7 +220,7 @@ export default function PedimentoDetalle() {
     <MainLayout>
       <div className="flex items-center gap-4 mb-6">
         <button 
-          onClick={() => router.back()}
+          onClick={() => router.push("/pedimentos")}
           className="p-2 rounded-xl bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-100 dark:border-slate-700"
         >
           <FaArrowLeft />
@@ -332,6 +352,9 @@ export default function PedimentoDetalle() {
           <TabsRevision 
             pedimentoData={pedimento.json_extraccion} 
             onChange={handleFieldChange} 
+            errores={pedimento.resultado_validacion || []}
+            validatedFields={validatedFields}
+            onValidateField={handleValidateField}
           />
           
         </div>
@@ -340,8 +363,23 @@ export default function PedimentoDetalle() {
       {/* ACTION BAR INFERIOR (STICKY) */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 flex items-center justify-between px-6 lg:pl-[284px] transition-all">
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          {/* Navegación futura: <button>&lt; Anterior</button> */}
-          <span className="font-medium bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded">Revisión de Pedimento</span>
+          <button
+            onClick={() => currentIndex > 0 && router.push(`/pedimentos/${pedimentosList[currentIndex - 1]}`)}
+            disabled={currentIndex <= 0}
+            className="px-3 py-1 bg-gray-100 dark:bg-slate-800 rounded disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            &lt; Anterior
+          </button>
+          <span className="font-medium bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded">
+            {currentIndex >= 0 ? `${currentIndex + 1} de ${pedimentosList.length}` : "Revisión de Pedimento"}
+          </span>
+          <button
+            onClick={() => currentIndex < pedimentosList.length - 1 && router.push(`/pedimentos/${pedimentosList[currentIndex + 1]}`)}
+            disabled={currentIndex === -1 || currentIndex >= pedimentosList.length - 1}
+            className="px-3 py-1 bg-gray-100 dark:bg-slate-800 rounded disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            Siguiente &gt;
+          </button>
         </div>
         
         <div className="flex items-center gap-3">
