@@ -106,6 +106,39 @@ export default function TabsRevision({ pedimentoData, onChange }) {
     );
   };
 
+  const renderTable = (dataKey, emptyMessage = "No hay datos detectados en esta sección.") => {
+    const data = pedimentoData?.[dataKey] || pedimentoData?.json_extraccion?.[dataKey] || [];
+    if (!Array.isArray(data) || data.length === 0) return <p className="text-gray-500 p-4">{emptyMessage}</p>;
+
+    // Obtener todas las columnas únicas de todos los objetos para evitar faltantes
+    const columns = Array.from(new Set(data.flatMap(item => Object.keys(item).filter(k => k !== "null" && k !== "_tipo_registro"))));
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+              {columns.map(col => (
+                <th key={col} className="p-3 border-b dark:border-slate-700 font-semibold">{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-sm">
+            {data.map((row, idx) => (
+              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-800/30">
+                {columns.map(col => (
+                  <td key={col} className="p-3 text-gray-800 dark:text-gray-300">
+                    {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col] || "-")}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   const renderJsonRaw = (dataKey) => {
     const data = pedimentoData?.[dataKey] || pedimentoData?.json_extraccion?.[dataKey] || [];
     if (data.length === 0) return <p className="text-gray-500 p-4">No hay datos detectados en esta sección.</p>;
@@ -143,9 +176,9 @@ export default function TabsRevision({ pedimentoData, onChange }) {
         {activeTab === "encabezado" && renderEncabezado()}
         {activeTab === "facturas" && renderFacturas()}
         {activeTab === "partidas" && renderPartidas()}
-        {activeTab === "identificadores" && renderJsonRaw("hoja_identificadores_impo")}
-        {activeTab === "proveedores" && renderJsonRaw("hoja_proveedores_nuevos")}
-        {activeTab === "materiales" && renderJsonRaw("hoja_materiales_nuevos")}
+        {activeTab === "identificadores" && renderTable("hoja_identificadores_impo")}
+        {activeTab === "proveedores" && renderTable("hoja_proveedores_nuevos")}
+        {activeTab === "materiales" && renderTable("hoja_materiales_nuevos")}
       </div>
     </div>
   );

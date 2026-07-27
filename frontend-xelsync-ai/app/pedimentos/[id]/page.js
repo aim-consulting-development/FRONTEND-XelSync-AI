@@ -7,7 +7,24 @@ import { useParams, useRouter } from "next/navigation";
 import { FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaSpinner, FaDownload, FaFileCode, FaClock, FaSave, FaCheckDouble } from "react-icons/fa";
 import ErrorBubbling from "@/components/pedimentos/ErrorBubbling";
 import TabsRevision from "@/components/pedimentos/TabsRevision";
+import JsonTreeViewer from "@/components/pedimentos/JsonTreeViewer";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/useAuth";
+
+const CustomPdfViewer = dynamic(() => import("@/components/pedimentos/CustomPdfViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-400">
+      <div className="animate-spin text-3xl text-blue-500 mb-2">
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <p className="text-sm">Cargando visor...</p>
+    </div>
+  )
+});
 
 export default function PedimentoDetalle() {
   const { id } = useParams();
@@ -19,6 +36,7 @@ export default function PedimentoDetalle() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [rawText, setRawText] = useState(null);
   const [pdfError, setPdfError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -55,28 +73,59 @@ export default function PedimentoDetalle() {
       const res = await api.get(`/pedimentos/${id}/archivo`, {
         responseType: "blob",
       });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
-      setPdfUrl(url);
+      const contentType = res.headers["content-type"] || "application/octet-stream";
+      
+      if (contentType.includes("json") || contentType.includes("text")) {
+        const text = await res.data.text();
+        setRawText(text);
+      } else {
+        const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
+        setPdfUrl(url);
+      }
     } catch (err) {
       console.error("Error cargando archivo original:", err);
       setPdfError("No se encontró o no se pudo cargar el archivo original.");
     }
   };
 
-  const handleDownloadInterxel = async () => {
+  const handleAprobar = async () => {
+    if (!confirm("¿Está seguro de marcar este pedimento como Aprobado sin exportar a InterXel aún?")) return;
+    
+    setSaving(true);
     try {
-      const res = await api.get(`/pedimentos/${id}/export_interxel`, {
-        responseType: "blob",
+      await api.put(`/pedimentos/${id}/aprobar`);
+      alert("Pedimento aprobado correctamente");
+      fetchPedimento();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Error al aprobar pedimento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadInterxel = async () => {
+    setSaving(true);
+    try {
+      await api.put(`/pedimentos/${id}/aprobar`);
+      setPedimento(prev => ({ ...prev, estado: "APROBADO" }));
+      
+      const response = await api.get(`/pedimentos/${id}/export_interxel`, {
+        responseType: 'blob'
       });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute("download", `InterXel_${pedimento?.pedimento}.xlsx`);
+      link.setAttribute('download', `InterXel_${pedimento.pedimento.replace(' ', '_')}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      link.parentNode.removeChild(link);
+      
+      alert("Pedimento aprobado y escrito en InterXel exitosamente.");
+      router.push("/pedimentos");
     } catch (err) {
-      alert("Error al descargar el archivo InterXel.");
+      alert(err.response?.data?.detail || "Error al aprobar o generar archivo InterXel");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -118,34 +167,6 @@ export default function PedimentoDetalle() {
     }
   };
 
-  const handleAprobar = async () => {
-    try {
-      setSaving(true);
-      await api.put(`/pedimentos/${id}/aprobar`);
-      setPedimento(prev => ({ ...prev, estado: "APROBADO" }));
-      
-      // Escribir en InterXel (Descargar el archivo Excel)
-      const response = await api.get(`/pedimentos/${id}/export_interxel`, {
-        responseType: 'blob', // Importante para manejar la descarga del archivo
-      });
-      
-      // Crear enlace de descarga
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `InterXel_Pedimento_${pedimento.pedimento}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-
-      alert("Pedimento aprobado y escrito en InterXel exitosamente.");
-      router.push("/pedimentos");
-    } catch (err) {
-      alert(err.response?.data?.detail || "Error al aprobar o generar archivo InterXel");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -201,12 +222,22 @@ export default function PedimentoDetalle() {
             Cliente: <span className="font-medium text-gray-700 dark:text-gray-300">{pedimento.cliente_empresa || "Sin asignar"}</span>
           </p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-3">
+          <button
+            onClick={handleAprobar}
+            disabled={saving}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-emerald-500 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <FaSpinner className="animate-spin" /> : <FaCheckDouble />}
+            Solo Aprobar
+          </button>
           <button
             onClick={handleDownloadInterxel}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all text-sm font-semibold flex items-center gap-2"
+            disabled={saving}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
           >
-            <FaDownload /> Exportar InterXel
+            {saving ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+            Aprobar y Escribir en InterXel
           </button>
         </div>
       </div>
@@ -223,12 +254,12 @@ export default function PedimentoDetalle() {
             </div>
             
             <div className="flex-1 w-full bg-gray-100 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden relative min-h-[400px] flex items-center justify-center">
-              {pdfUrl ? (
-                <iframe 
-                  src={pdfUrl} 
-                  className="w-full h-full border-0 absolute inset-0"
-                  title="Visor de Documento"
-                />
+              {rawText ? (
+                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900">
+                  <JsonTreeViewer data={rawText} />
+                </div>
+              ) : pdfUrl ? (
+                <CustomPdfViewer pdfUrl={pdfUrl} />
               ) : (
                 <div className="flex flex-col items-center justify-center text-gray-400">
                   {pdfError ? (
@@ -323,15 +354,6 @@ export default function PedimentoDetalle() {
               >
                 {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
                 Guardar Borrador
-              </button>
-              
-              <button
-                onClick={handleAprobar}
-                disabled={saving || pedimento.estado === "APROBADO"}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium rounded-lg shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:grayscale"
-              >
-                <FaCheckDouble />
-                Aprobar y Escribir en InterXel
               </button>
             </>
           )}

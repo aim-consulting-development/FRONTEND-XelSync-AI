@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaUpload,
@@ -129,11 +130,28 @@ export default function ConciliacionPage() {
   return (
     <MainLayout>
       {/* Encabezado */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Conciliación SAT</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Comparación automática entre el sistema y los reportes del SAT
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Conciliación SAT</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Comparación automática entre el sistema y los reportes del SAT
+            </p>
+          </div>
+          <InfoModal title="Módulo de Conciliación SAT (Trade Compliance)">
+            <p>
+              La <strong>Conciliación SAT vs Data Stage (Glosa)</strong> es una auditoría preventiva para detectar desviaciones entre los pedimentos extraídos y lo que la Autoridad (SAT/AGA) tiene registrado en sus sistemas.
+            </p>
+            <p>
+              <strong>Impacto Aduanero:</strong> Un pedimento no registrado en el SAT, o registrado con montos de contribuciones diferentes, puede detonar facultades de comprobación (PACO/PAMA). Asegura la deducción del IVA y previene multas de la Administración General de Auditoría de Comercio Exterior (AGACE).
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Revisa inmediatamente las alertas de <strong>"No encontrados en SAT"</strong>.</li>
+              <li>Aclara diferencias en el <strong>Valor en Aduana</strong> o IVA pagado.</li>
+              <li>Conserva siempre el acuse electrónico del DODA o Aviso Consolidado.</li>
+            </ul>
+          </InfoModal>
+        </div>
       </div>
 
       {/* KPIs */}

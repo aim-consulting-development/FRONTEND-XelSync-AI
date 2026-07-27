@@ -92,6 +92,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       roles: ["ADMIN"],
     },
     {
+      name: "Mi Cartera",
+      href: "/cartera",
+      icon: <FaUsers />,
+      roles: ["OPERADOR"],
+    },
+    {
       name: "Configuración",
       href: "/configuracion",
       icon: <FaCog />,

@@ -126,6 +126,32 @@ export default function Navbar() {
     } catch {}
   };
 
+  const handleAprobarTraspaso = async (id) => {
+    try {
+      await api.post(`/usuarios/cartera/aprobar-traspaso/${id}`);
+      // Actualizar local
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, leida: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+      alert("Traspaso aprobado exitosamente.");
+    } catch (err) {
+      alert("Error al aprobar el traspaso.");
+    }
+  };
+
+  const handleRechazarTraspaso = async (id) => {
+    try {
+      await api.post(`/usuarios/cartera/rechazar-traspaso/${id}`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, leida: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch (err) {
+      alert("Error al rechazar el traspaso.");
+    }
+  };
+
   // Cerrar dropdowns al click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -142,7 +168,7 @@ export default function Navbar() {
 
   const logout = () => {
     localStorage.clear();
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const initials = user?.nombre
@@ -253,9 +279,26 @@ export default function Navbar() {
                           {!n.leida && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full inline-block" />}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{n.mensaje}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-1">
                           {n.created_at ? new Date(n.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : ""}
                         </p>
+                        
+                        {n.tipo === "TRASPASO_CARTERA" && !n.leida && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAprobarTraspaso(n.id); }}
+                              className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-[10px] rounded"
+                            >
+                              Aceptar
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRechazarTraspaso(n.id); }}
+                              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded"
+                            >
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => deleteNotification(n.id)}

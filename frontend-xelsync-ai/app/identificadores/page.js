@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -74,11 +75,25 @@ export default function IdentificadoresPage() {
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <FaTags className="text-blue-500" /> Identificadores
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de identificadores a nivel pedimento y partida</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <FaTags className="text-blue-500" /> Identificadores
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de identificadores a nivel pedimento y partida</p>
+          </div>
+          <InfoModal title="Módulo de Identificadores (Trade Compliance)">
+            <p>
+              Los <strong>Identificadores</strong> (Apéndice 8 del Anexo 22) detallan supuestos de aplicación específicos y declaran información adicional obligatoria tanto a Nivel Global (Cabecera) como a Nivel Partida.
+            </p>
+            <p>
+              <strong>Impacto Aduanero:</strong> La omisión de identificadores clave (como <strong>EN, PT, TL, V1, RT</strong>) puede resultar en multas por Datos Inexactos y causar el desconocimiento de Preferencias Arancelarias (PROSEC, Regla 8va, Tratados).
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Revisa que los identificadores de <strong>Nivel Partida</strong> coincidan con los requerimientos específicos de la Fracción Arancelaria.</li>
+              <li>Asegúrate de incluir complementos precisos, ya que la Autoridad realiza auditorías electrónicas basadas en estos códigos.</li>
+            </ul>
+          </InfoModal>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -70,7 +71,8 @@ export default function CatalogosPage() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({});
   const [formLoading, setFormLoading] = useState(false);
-
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
   const PAGE_SIZE = 15;
   const config = TAB_CONFIG[activeTab];
 
@@ -186,6 +188,21 @@ export default function CatalogosPage() {
     }
   };
 
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!uploadFile) return;
+    
+    // Simulate upload or actual endpoint if exists
+    // const formData = new FormData();
+    // formData.append('file', uploadFile);
+    // await api.post(`${config.endpoint}/upload`, formData);
+    
+    alert(`Archivo "${uploadFile.name}" preparado para procesar en el catálogo de ${activeTab}. (Funcionalidad simulada para la demo)`);
+    setShowUploadModal(false);
+    setUploadFile(null);
+  };
+
+
   const getStatusBadge = (val) =>
     val
       ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -208,18 +225,41 @@ export default function CatalogosPage() {
     <MainLayout>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catálogos</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Administración de catálogos maestros</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catálogos</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Administración de catálogos maestros</p>
+          </div>
+          <InfoModal title="Módulo de Catálogos (Trade Compliance)">
+            <p>
+              Mantener los <strong>Catálogos de Comercio Exterior</strong> sincronizados (Materiales, Proveedores, Clientes y Fracciones) es fundamental para evitar inconsistencias en el Anexo 24 y Anexo 30.
+            </p>
+            <p>
+              <strong>Impacto Aduanero:</strong> Las multas por declarar claves o descripciones inexactas pueden ser considerables (Art. 184 L.A.). Además, la correcta clasificación arancelaria garantiza el pago adecuado de contribuciones y el cumplimiento de Regulaciones y Restricciones No Arancelarias (RRNAs).
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Verifica que la <strong>Fracción Arancelaria</strong> coincida con el Sistema Armonizado (TIGIE).</li>
+              <li>Actualiza regularmente los proveedores (Tax ID/Tax Payer) para asegurar la trazabilidad del T-MEC y otros Tratados de Libre Comercio.</li>
+            </ul>
+          </InfoModal>
         </div>
         {!config.readOnly && canWrite && (
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md"
-          >
-            <FaPlus />
-            Nuevo {activeTab.slice(0, -1)}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md"
+            >
+              <FaUpload />
+              Carga Masiva
+            </button>
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md"
+            >
+              <FaPlus />
+              Nuevo {activeTab.slice(0, -1)}
+            </button>
+          </div>
         )}
       </div>
 
@@ -409,8 +449,8 @@ export default function CatalogosPage() {
 
       {/* Modal Crear/Editar */}
       {showModal && !config.readOnly && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-70">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full mx-4 border border-gray-200 dark:border-slate-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-slate-700">
             <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {selectedItem ? `Editar ${activeTab.slice(0, -1)}` : `Nuevo ${activeTab.slice(0, -1)}`}
@@ -462,6 +502,67 @@ export default function CatalogosPage() {
                 >
                   {formLoading && <FaSpinner className="animate-spin" />}
                   {selectedItem ? "Guardar Cambios" : "Crear Registro"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <FaUpload className="text-blue-500" /> Carga Masiva - {activeTab}
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setShowUploadModal(false); setUploadFile(null); }}
+                className="relative z-10 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <FaTimesCircle size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleUploadSubmit} className="p-4 sm:p-6 flex flex-col gap-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Sube un archivo de Excel (.xlsx, .xls) o CSV con los registros de <strong>{activeTab}</strong>.
+              </div>
+              <div className="relative border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-gray-50 dark:bg-slate-900/30">
+                <FaFileExport className="text-4xl text-gray-400 mb-3" />
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">
+                  {uploadFile ? uploadFile.name : "Haz clic o arrastra un archivo"}
+                </p>
+                <input
+                  type="file"
+                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                  onChange={(e) => setUploadFile(e.target.files[0])}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  title=""
+                />
+                {!uploadFile && (
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Formatos soportados: Excel, CSV
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowUploadModal(false); setUploadFile(null); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!uploadFile}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <FaUpload />
+                  Procesar Archivo
                 </button>
               </div>
             </form>

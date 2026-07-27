@@ -77,6 +77,7 @@ export default function CargaArchivos() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [batchId, setBatchId] = useState(null);
   const [batchStatus, setBatchStatus] = useState(null);
+  const [showZipWarningModal, setShowZipWarningModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef(null);
   const pollingRef = useRef(null);
@@ -141,10 +142,22 @@ export default function CargaArchivos() {
   };
 
   // ─── Upload Lote ──────────────────────────────────────
-  const handleUpload = async () => {
+  const handleUpload = async (skipWarning = false) => {
     const validFiles = selectedFiles.filter((f) => !f.error);
     if (validFiles.length === 0) return;
 
+    if (skipWarning !== true) {
+      const hasZip = validFiles.some((f) => {
+        const ext = f.name.split(".").pop()?.toLowerCase();
+        return ["zip", "rar", "7z"].includes(ext);
+      });
+      if (hasZip) {
+        setShowZipWarningModal(true);
+        return;
+      }
+    }
+
+    setShowZipWarningModal(false);
     setIsUploading(true);
     const formData = new FormData();
     validFiles.forEach((f) => formData.append("files", f.file));
@@ -189,6 +202,14 @@ export default function CargaArchivos() {
         }
       } catch (err) {
         console.error("Error polling lote:", err);
+        if (err.response?.status === 404) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          localStorage.removeItem("xelsync_current_batch_id");
+          setBatchId(null);
+        }
       }
     };
 
@@ -220,6 +241,7 @@ export default function CargaArchivos() {
   const handleCancel = async (archivoId) => {
     try {
       await api.post(`/cargas-masivas/archivo/${archivoId}/cancelar`);
+      setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "CANCELADO" } : f));
     } catch (err) {
       console.error("Error al cancelar", err);
       alert(err.response?.data?.detail || "No se pudo cancelar la extracción");
@@ -229,6 +251,7 @@ export default function CargaArchivos() {
   const handlePause = async (archivoId) => {
     try {
       await api.post(`/cargas-masivas/archivo/${archivoId}/pausar`);
+      setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "PAUSADO" } : f));
     } catch (err) {
       console.error("Error al pausar", err);
       alert(err.response?.data?.detail || "No se pudo pausar la extracción");
@@ -238,6 +261,7 @@ export default function CargaArchivos() {
   const handleResume = async (archivoId) => {
     try {
       await api.post(`/cargas-masivas/archivo/${archivoId}/reanudar`);
+      setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "EN_PROCESO" } : f));
     } catch (err) {
       console.error("Error al reanudar", err);
       alert(err.response?.data?.detail || "No se pudo reanudar la extracción");
@@ -412,7 +436,7 @@ export default function CargaArchivos() {
             </p>
             <button
               id="upload-button"
-              onClick={handleUpload}
+              onClick={() => handleUpload(false)}
               disabled={validCount === 0 || isUploading}
               className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2
                 ${
@@ -530,10 +554,10 @@ export default function CargaArchivos() {
                             {f.nombre_original}
                           </p>
                           {f.mensaje_error && (
-                            <p className="text-xs text-red-500 truncate max-w-xs mt-0.5">
-                              {f.mensaje_error}
-                            </p>
-                          )}
+                          <div className={`text-xs mt-1 ${f.estado === 'COMPLETADO' ? 'text-green-500' : (f.estado === 'ERROR' ? 'text-red-500' : 'text-yellow-500')}`}>
+                            {f.mensaje_error}
+                          </div>
+                        )}
                         </div>
                       </div>
                     </td>
@@ -613,6 +637,62 @@ export default function CargaArchivos() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Upload Button */}
+      {selectedFiles.length > 0 && !isUploading && (
+        <div className="fixed bottom-8 right-8 z-40 animate-fade-in">
+          <button
+            onClick={() => handleUpload(false)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-full shadow-xl hover:shadow-blue-500/25 transition-all hover:scale-105 active:scale-95 font-semibold text-lg"
+          >
+            <FaCloudUploadAlt className="text-2xl" />
+            Subir {selectedFiles.filter((f) => !f.error).length} archivo(s)
+          </button>
+        </div>
+      )}
+
+      {/* Zip Warning Modal */}
+      {showZipWarningModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 dark:border-slate-700">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-500 flex-shrink-0">
+                <FaFileArchive className="text-2xl" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                Validación de Archivos Comprimidos
+              </h3>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-4 mb-6">
+              <p>
+                Has seleccionado uno o más archivos comprimidos (ZIP). Antes de subirlo, por favor asegúrate de que el interior de la carpeta comprimida contenga:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 font-medium text-gray-700 dark:text-gray-200">
+                <li>Archivos de Data Stage (M3)</li>
+                <li>Archivos de Glosas (.asc)</li>
+                <li>Pedimentos en formato PDF</li>
+              </ul>
+              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
+                <strong>Nota:</strong> Los archivos de acuse de validación (.err) que solo contienen firmas electrónicas y líneas de captura no contienen datos de pedimentos válidos y serán ignorados.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowZipWarningModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700 rounded-xl transition-colors"
+              >
+                Revisar Archivos
+              </button>
+              <button
+                onClick={() => handleUpload(true)}
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shadow-lg shadow-blue-500/20"
+              >
+                Sí, continuar subida
+              </button>
+            </div>
           </div>
         </div>
       )}

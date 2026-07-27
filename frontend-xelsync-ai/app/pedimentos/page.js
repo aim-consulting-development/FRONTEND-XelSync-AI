@@ -59,6 +59,7 @@ export default function PedimentosPage() {
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
   const [tipoFilter, setTipoFilter] = useState("");
+  const [orden, setOrden] = useState("desc");
 
   const fetchPedimentos = useCallback(async () => {
     setLoading(true);
@@ -70,6 +71,7 @@ export default function PedimentosPage() {
       if (search) params.append("q", search);
       if (estadoFilter) params.append("estado", estadoFilter);
       if (tipoFilter) params.append("tipo_operacion", tipoFilter);
+      params.append("orden", orden);
 
       const res = await api.get(`/pedimentos?${params.toString()}`);
       setItems(res.data.items || []);
@@ -81,7 +83,7 @@ export default function PedimentosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, estadoFilter, tipoFilter]);
+  }, [page, size, search, estadoFilter, tipoFilter, orden]);
 
   useEffect(() => {
     fetchPedimentos();
@@ -137,6 +139,15 @@ export default function PedimentosPage() {
               <option value="">Todos los Tipos</option>
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+            
+            <select
+              value={orden}
+              onChange={(e) => { setOrden(e.target.value); setPage(1); }}
+              className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="desc">Más recientes primero</option>
+              <option value="asc">Más antiguos primero</option>
+            </select>
           </div>
         </div>
 
@@ -158,6 +169,7 @@ export default function PedimentosPage() {
                 <tr className="bg-gray-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-700">
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pedimento</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha de Carga</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Completitud</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">SLA</th>
@@ -174,6 +186,9 @@ export default function PedimentosPage() {
                     </td>
                     <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
                       {item.cliente_empresa}
+                    </td>
+                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                      {item.fecha_recepcion_sistema ? new Date(item.fecha_recepcion_sistema).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                     </td>
                     <td className="p-4">
                       <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">

@@ -165,9 +165,16 @@ export default function Configuracion() {
     }
   };
 
+  // Cambiar pestaña activa si el usuario no es admin (solo pueden ver seguridad)
+  useEffect(() => {
+    if (user && !isAdmin && activeTab !== "seguridad") {
+      setActiveTab("seguridad");
+    }
+  }, [user, isAdmin, activeTab]);
+
   const tabs = [
-    { id: "perfil", label: "Perfil", icon: <FaUser /> },
-    { id: "preferencias", label: "Preferencias", icon: <FaBell /> },
+    ...(isAdmin ? [{ id: "perfil", label: "Perfil", icon: <FaUser /> }] : []),
+    ...(isAdmin ? [{ id: "preferencias", label: "Preferencias", icon: <FaBell /> }] : []),
     { id: "seguridad", label: "Seguridad", icon: <FaShieldAlt /> },
     ...(isAdmin ? [{ id: "sistema", label: "Sistema", icon: <FaServer /> }] : []),
   ];

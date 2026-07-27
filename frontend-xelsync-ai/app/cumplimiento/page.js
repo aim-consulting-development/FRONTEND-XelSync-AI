@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaShieldAlt,
@@ -116,9 +117,24 @@ export default function CumplimientoPage() {
     <MainLayout>
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cumplimiento</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Monitoreo de obligaciones aduaneras y fiscales</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cumplimiento</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Monitoreo de obligaciones aduaneras y fiscales</p>
+          </div>
+          <InfoModal title="Módulo de Cumplimiento (Trade Compliance)">
+            <p>
+              El <strong>Cumplimiento Aduanero (Trade Compliance)</strong> engloba la auditoría permanente del Expediente Electrónico de Comercio Exterior.
+            </p>
+            <p>
+              <strong>Impacto Aduanero:</strong> La falta del expediente digital completo (Pedimento, Factura Comercial, VUCEM, COVE, B/L) por cada operación puede derivar en multas severas por expediente incompleto y, en casos reiterados, en la suspensión en el Padrón de Importadores.
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Monitorea el estatus de los <strong>Semáforos de Riesgo</strong> (Ej. plazos de permanencia de temporales).</li>
+              <li>Asegura la integración del E-Document para cada fracción arancelaria que lo requiera.</li>
+              <li>Prepara a la empresa para auditorías de <strong>Certificación IVA/IEPS</strong> u OEA.</li>
+            </ul>
+          </InfoModal>
         </div>
         <button
           onClick={handleRefresh}

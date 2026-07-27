@@ -49,8 +49,8 @@ try {
   // Guardar el token en el cliente
   localStorage.setItem("access_token", response.data.access_token);
   
-  // Redirigir al dashboard
-  router.push("/dashboard");
+  // Redirigir al dashboard con recarga completa para limpiar cualquier estado anterior (ej. perfil en caché)
+  window.location.href = "/dashboard";
 } catch (error) {
   console.error(error);
   // Intentar extraer el mensaje del backend si existe

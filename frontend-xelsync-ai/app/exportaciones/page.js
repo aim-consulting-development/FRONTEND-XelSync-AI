@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaSearch,
@@ -60,11 +61,25 @@ export default function ExportacionesPage() {
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <FaPlaneDeparture className="text-emerald-500" /> Exportaciones
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión e historial de pedimentos de exportación procesados</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <FaPlaneDeparture className="text-emerald-500" /> Exportaciones
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión e historial de pedimentos de exportación procesados</p>
+          </div>
+          <InfoModal title="Módulo de Exportaciones (Trade Compliance)">
+            <p>
+              El módulo de <strong>Exportaciones</strong> consolida la extracción y validación de pedimentos de exportación (ej. claves <strong>RT, V1, IN</strong>).
+            </p>
+            <p>
+              <strong>Impacto Aduanero:</strong> Es vital comprobar que las cantidades descargadas de los pedimentos de importación temporal (IMMEX) cuadren exactamente con lo exportado. Los errores de digitación en los pedimentos de retorno (RT) generan saldos vencidos en el Anexo 24 y Anexo 30, provocando cobros de IVA retroactivos y posibles embargos precautorios.
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Valida el <strong>Valor Comercial</strong> y los <strong>Incoterms</strong> (ej. FCA, DAP, DDP).</li>
+              <li>Asegúrate de que el pedimento cuente con acuse de validación (DODA/PITA) antes de consolidar el embarque.</li>
+            </ul>
+          </InfoModal>
         </div>
       </div>
 
