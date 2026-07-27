@@ -110,7 +110,7 @@ export default function CargaArchivos() {
     const validated = filesArray.map((file) => {
       const error = validateFile(file);
       return {
-        id: crypto.randomUUID(),
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
         file,
         name: file.name,
         size: file.size,
