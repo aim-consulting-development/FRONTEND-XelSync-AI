@@ -85,7 +85,7 @@ export default function CatalogosPendientesPage() {
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <FaShieldAlt className="text-orange-500" />
                   Bandeja de Cuarentena (Catálogos)
                 </h1>
@@ -99,7 +99,7 @@ export default function CatalogosPendientesPage() {
                   </ul>
                 </InfoModal>
               </div>
-              <p className="text-gray-500 mt-2">
+              <p className="text-gray-500 dark:text-gray-400 mt-2">
                 Registros extraídos por la IA que no se encontraron en los catálogos maestros. 
                 Aprueba su alta o vincúlalos a registros existentes para evitar duplicidad.
               </p>
@@ -107,12 +107,12 @@ export default function CatalogosPendientesPage() {
           </div>
 
           {/* Filtros */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 mb-6 flex flex-wrap gap-4 items-center justify-between">
             <div className="flex gap-4">
               <select 
                 value={filtroTipo} 
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               >
                 <option value="">Todos los tipos</option>
                 <option value="MATERIAL">Materiales</option>
@@ -127,27 +127,27 @@ export default function CatalogosPendientesPage() {
                 placeholder="Buscar clave o descripción..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg w-64 focus:ring-2 focus:ring-blue-500 outline-none"
               />
-              <button type="submit" className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2">
+              <button type="submit" className="bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg flex items-center gap-2">
                 <FaSearch size={18} />
               </button>
             </form>
           </div>
 
           {/* Tabla */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
+                  <tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">
                     <th className="px-6 py-4 font-medium">Tipo</th>
                     <th className="px-6 py-4 font-medium">Clave Extraída</th>
                     <th className="px-6 py-4 font-medium">Descripción</th>
                     <th className="px-6 py-4 font-medium text-center">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                   {loading ? (
                     <tr>
                       <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
@@ -167,28 +167,28 @@ export default function CatalogosPendientesPage() {
                     </tr>
                   ) : (
                     pendientes.map((item) => (
-                      <tr key={item.id} className="hover:bg-orange-50/50 transition-colors">
+                      <tr key={item.id} className="hover:bg-orange-50/50 dark:hover:bg-slate-700 transition-colors">
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                            item.tipo === 'MATERIAL' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                            item.tipo === 'PROVEEDOR' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                            'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            item.tipo === 'MATERIAL' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' : 
+                            item.tipo === 'PROVEEDOR' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
+                            'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
                           }`}>
                             {item.tipo}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-medium text-gray-900">
+                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                           {item.clave_extraida}
                         </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {item.descripcion_extraida || <span className="text-gray-400 italic">Sin descripción</span>}
+                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                          {item.descripcion_extraida || <span className="text-gray-400 dark:text-gray-500 italic">Sin descripción</span>}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleVincular(item.id)}
                               disabled={actionLoading === item.id}
-                              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-200 disabled:opacity-50 flex items-center gap-1.5"
+                              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 focus:ring-2 focus:ring-gray-200 disabled:opacity-50 flex items-center gap-1.5"
                               title="Vincular a un registro existente"
                             >
                               <FaLink size={16} /> Vincular

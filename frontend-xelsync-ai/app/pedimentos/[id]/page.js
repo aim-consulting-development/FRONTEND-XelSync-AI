@@ -341,7 +341,11 @@ export default function PedimentoDetalle() {
           </div>
 
           {/* CRUCE COVE / XML */}
-          <CoveCompliancePanel validacion={pedimento.cruce_cove} />
+          <CoveCompliancePanel 
+            validacion={pedimento.cruce_cove} 
+            pedimentoId={id} 
+            onUploadSuccess={fetchPedimento} 
+          />
           
           {/* CRUCE GLOSA (DATA STAGE) */}
           <GlosaCompliancePanel validacion={pedimento.cruce_glosa} />
