@@ -79,11 +79,8 @@ export default function CatalogosPendientesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col transition-all duration-300">
-        <Navbar />
-        <main className="p-8">
+    <MainLayout>
+      <div className="max-w-7xl mx-auto">
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-4">
@@ -213,8 +210,7 @@ export default function CatalogosPendientesPage() {
               </table>
             </div>
           </div>
-        </main>
       </div>
-    </div>
+    </MainLayout>
   );
 }
