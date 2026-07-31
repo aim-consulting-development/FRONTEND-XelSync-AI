@@ -87,41 +87,39 @@ export default function CustomPdfViewer({ pdfUrl }) {
         ref={containerRef}
         className="flex-1 w-full overflow-auto bg-gray-100 dark:bg-slate-900 p-4"
       >
-        {baseWidth > 0 && (
-          <div
-            className="flex flex-col items-center"
-            style={{ minWidth: pageWidth ? `${pageWidth}px` : "auto" }}
+        <div
+          className="flex flex-col items-center"
+          style={{ minWidth: pageWidth ? `${pageWidth}px` : "auto" }}
+        >
+          <Document
+            file={pdfUrl}
+            options={options}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex flex-col items-center justify-center mt-10 w-full">
+                <FaSpinner className="animate-spin text-3xl text-blue-500 mb-2" />
+                <p className="text-gray-500 text-sm">Cargando PDF...</p>
+              </div>
+            }
+            error={
+              <div className="text-red-500 p-4 mt-10 bg-red-50 rounded-lg text-sm w-full text-center">
+                Error al cargar el PDF. Intente usar el botón de descarga.
+              </div>
+            }
           >
-            <Document
-              file={pdfUrl}
-              options={options}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
-                <div className="flex flex-col items-center justify-center mt-10 w-full">
-                  <FaSpinner className="animate-spin text-3xl text-blue-500 mb-2" />
-                  <p className="text-gray-500 text-sm">Cargando PDF...</p>
-                </div>
-              }
-              error={
-                <div className="text-red-500 p-4 mt-10 bg-red-50 rounded-lg text-sm w-full text-center">
-                  Error al cargar el PDF. Intente usar el botón de descarga.
-                </div>
-              }
-            >
-              {Array.from(new Array(numPages), (el, index) => (
-                <div key={`page_${index + 1}`} className="mb-4 shadow-md bg-white mx-auto">
-                  <Page
-                    pageNumber={index + 1}
-                    width={pageWidth}
-                    renderTextLayer={true}
-                    renderAnnotationLayer={true}
-                    loading={<div className="h-20" />}
-                  />
-                </div>
-              ))}
-            </Document>
-          </div>
-        )}
+            {Array.from(new Array(numPages), (el, index) => (
+              <div key={`page_${index + 1}`} className="mb-4 shadow-md bg-white mx-auto">
+                <Page
+                  pageNumber={index + 1}
+                  width={pageWidth}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  loading={<div className="h-20" />}
+                />
+              </div>
+            ))}
+          </Document>
+        </div>
       </div>
     </div>
   );
