@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -116,9 +117,16 @@ export default function PedimentosPage() {
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Pedimentos</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión y seguimiento de pedimentos aduanales</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Pedimentos</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión y seguimiento de pedimentos aduanales</p>
+          </div>
+          <InfoModal title="Módulo de Pedimentos">
+            <p>
+              Revisa y gestiona todos los pedimentos extraídos, validados y auditados.
+            </p>
+          </InfoModal>
         </div>
       </div>
 

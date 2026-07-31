@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaCloudUploadAlt,
@@ -308,13 +309,25 @@ export default function CargaArchivos() {
     <MainLayout>
       {/* ─── Header ─────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Carga de Archivos
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Sube pedimentos (PDF), archivos M3 (TXT/CSV), glosas (ASC) o carpetas comprimidas (ZIP)
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Carga de Archivos
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Sube tus pedimentos (PDF), Anexos o Glosas (ZIP, ASC).
+            </p>
+          </div>
+          <InfoModal title="Carga de Archivos">
+            <p>
+              Sube los archivos necesarios para la validación y extracción inteligente:
+            </p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li><strong>PDF:</strong> Pedimentos simples (IA los extraerá).</li>
+              <li><strong>ZIP:</strong> Para carga masiva (fan-out automático).</li>
+              <li><strong>Glosa/M3:</strong> Archivos del SAT para validación cruzada.</li>
+            </ul>
+          </InfoModal>
         </div>
       </div>
 

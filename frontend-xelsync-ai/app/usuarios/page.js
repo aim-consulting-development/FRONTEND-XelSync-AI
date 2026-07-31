@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaUserPlus,
@@ -177,11 +178,19 @@ export default function Usuarios() {
   return (
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Usuarios</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestiona los accesos, roles y la cartera de clientes de los operadores.
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Usuarios</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Gestiona los accesos, roles y la cartera de clientes de los operadores.
+            </p>
+          </div>
+          <InfoModal title="Módulo de Usuarios">
+            <p>
+              Crea y administra las cuentas de usuarios (Administradores, Auditores, Operadores, Lectura).
+              Para los operadores, puedes asignarles acceso a clientes específicos usando la Cartera de Clientes.
+            </p>
+          </InfoModal>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -184,11 +185,18 @@ export default function Configuracion() {
 
   return (
     <MainLayout>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configuración</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Administra tu perfil, preferencias y opciones del sistema.
-        </p>
+      <div className="mb-6 flex items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configuración</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Administra tu perfil, preferencias y opciones del sistema.
+          </p>
+        </div>
+        <InfoModal title="Configuración">
+          <p>
+            Modifica la contraseña de tu cuenta, preferencias de interfaz y otras opciones de perfil.
+          </p>
+        </InfoModal>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
+import InfoModal from '@/components/shared/InfoModal';
 import { FaShieldAlt, FaCheckCircle, FaLink, FaExclamationTriangle, FaSearch, FaSpinner } from 'react-icons/fa';
 
 export default function CatalogosPendientesPage() {
@@ -83,15 +84,28 @@ export default function CatalogosPendientesPage() {
       <div className="flex-1 ml-64 flex flex-col transition-all duration-300">
         <Navbar />
         <main className="p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <FaShieldAlt className="text-orange-500" />
-              Bandeja de Cuarentena (Catálogos)
-            </h1>
-            <p className="text-gray-500 mt-2">
-              Registros extraídos por la IA que no se encontraron en los catálogos maestros. 
-              Aprueba su alta o vincúlalos a registros existentes para evitar duplicidad.
-            </p>
+          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <FaShieldAlt className="text-orange-500" />
+                  Bandeja de Cuarentena (Catálogos)
+                </h1>
+                <InfoModal title="Bandeja de Cuarentena">
+                  <p>
+                    Revisa las extracciones realizadas por la IA que no hicieron "match" automático con los catálogos de Comercio Exterior (Materiales, Proveedores, Clientes).
+                  </p>
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li><strong>Vincular:</strong> Relaciona este registro a un catálogo existente para "entrenar" a la IA y evitar duplicados.</li>
+                    <li><strong>Aprobar Alta:</strong> Da de alta oficialmente este registro nuevo en la base de datos de XelSync.</li>
+                  </ul>
+                </InfoModal>
+              </div>
+              <p className="text-gray-500 mt-2">
+                Registros extraídos por la IA que no se encontraron en los catálogos maestros. 
+                Aprueba su alta o vincúlalos a registros existentes para evitar duplicidad.
+              </p>
+            </div>
           </div>
 
           {/* Filtros */}

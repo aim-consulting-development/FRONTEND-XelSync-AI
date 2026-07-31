@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import {
@@ -176,9 +177,16 @@ export default function Dashboard() {
     <MainLayout>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Datos en tiempo real del sistema</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Datos en tiempo real del sistema</p>
+          </div>
+          <InfoModal title="Dashboard">
+            <p>
+              Vista general de las métricas clave de la operación.
+            </p>
+          </InfoModal>
         </div>
         <button
           onClick={() => fetchData(true)}

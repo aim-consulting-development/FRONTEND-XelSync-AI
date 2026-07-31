@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import {
   FaChartBar,
@@ -62,11 +63,19 @@ export default function Reportes() {
   return (
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reportes y Métricas</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Visualiza el rendimiento operativo, valor en aduana y cumplimiento de SLAs.
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reportes y Métricas</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Visualiza el rendimiento operativo, valor en aduana y cumplimiento de SLAs.
+            </p>
+          </div>
+          <InfoModal title="Módulo de Reportes">
+            <p>
+              Genera reportes detallados y gráficas sobre la operación aduanera.
+              Puedes descargar la información en formato InterXel / ARANXEL para su posterior procesamiento.
+            </p>
+          </InfoModal>
         </div>
         <div className="flex items-center gap-3">
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-slate-700 p-1 flex">
