@@ -36,7 +36,7 @@ const SLA_COLORS = {
   VENCIDO: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-const ESTADO_COLORS = {
+export const ESTADO_COLORS = {
   PENDIENTE: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   INCOMPLETO: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
   EN_REVISION: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -254,9 +254,16 @@ export default function PedimentosPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ESTADO_COLORS[item.estado] || ESTADO_COLORS.PENDIENTE}`}>
-                        {item.estado}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ESTADO_COLORS[item.estado] || ESTADO_COLORS.PENDIENTE}`}>
+                          {item.estado}
+                        </span>
+                        {item.cruce_cove && item.cruce_cove.xmls_encontrados === 0 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50">
+                            Sin COVE
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-center">
                       <button

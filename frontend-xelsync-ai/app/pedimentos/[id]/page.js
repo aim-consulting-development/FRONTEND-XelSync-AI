@@ -13,6 +13,16 @@ import GlosaCompliancePanel from "@/components/pedimentos/GlosaCompliancePanel";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/useAuth";
 
+const ESTADO_COLORS = {
+  PENDIENTE: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  INCOMPLETO: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  EN_REVISION: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  PROCESADO: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  APROBADO: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  INTERXEL_GENERADO: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  RECHAZADO: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
+
 const CustomPdfViewer = dynamic(() => import("@/components/pedimentos/CustomPdfViewer"), {
   ssr: false,
   loading: () => (
@@ -227,15 +237,16 @@ export default function PedimentoDetalle() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             Pedimento {pedimento.pedimento}
-            {pedimento.estado === "PROCESADO" ? (
-              <span className="text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1 rounded-full font-medium flex items-center gap-1.5">
-                <FaCheckCircle /> Procesado
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1.5 ${ESTADO_COLORS[pedimento.estado] || ESTADO_COLORS.PENDIENTE}`}>
+                {pedimento.estado === "PROCESADO" || pedimento.estado === "APROBADO" ? <FaCheckCircle /> : <FaExclamationCircle />} {pedimento.estado}
               </span>
-            ) : (
-              <span className="text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-full font-medium flex items-center gap-1.5">
-                <FaExclamationCircle /> {pedimento.estado}
-              </span>
-            )}
+              {pedimento.cruce_cove && pedimento.cruce_cove.xmls_encontrados === 0 && (
+                <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50">
+                  Sin COVE
+                </span>
+              )}
+            </div>
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Cliente: <span className="font-medium text-gray-700 dark:text-gray-300">{pedimento.cliente_empresa || "Sin asignar"}</span>
