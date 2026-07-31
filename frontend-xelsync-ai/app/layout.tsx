@@ -39,6 +39,8 @@ export const viewport: Viewport = {
   ],
 };
 
+import { Toaster } from 'react-hot-toast';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,6 +55,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-200 dark:from-slate-950 dark:to-slate-900 selection:bg-blue-600 selection:text-white transition-colors duration-500">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
+          <Toaster position="top-right" />
         </ThemeProvider>
       </body>
     </html>
