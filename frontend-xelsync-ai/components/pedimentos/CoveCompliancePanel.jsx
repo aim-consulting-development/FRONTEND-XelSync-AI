@@ -31,8 +31,9 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith(".xml")) {
-      toast.error("El archivo debe ser un XML.");
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (ext !== "xml" && ext !== "pdf") {
+      toast.error("El archivo debe ser un XML o PDF.");
       return;
     }
 
@@ -103,7 +104,7 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
             <div className="mt-4 flex items-center gap-3">
               <input
                 type="file"
-                accept=".xml"
+                accept=".xml,.pdf"
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleUploadCove}
@@ -114,10 +115,10 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
                 className="flex items-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
               >
                 {isUploading ? <FaSpinner className="animate-spin" /> : <FaUpload />}
-                {isUploading ? "Procesando..." : "Subir Archivo COVE/XML"}
+                {isUploading ? "Procesando..." : "Subir Archivo COVE (XML o PDF)"}
               </button>
               <p className="text-xs text-gray-600 bg-white/50 px-2 py-1 rounded">
-                Sube el XML faltante para validar automáticamente.
+                Sube el documento faltante (XML o PDF) para validar automáticamente.
               </p>
             </div>
           )}
@@ -126,7 +127,7 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
         status === "GREEN" && (
           <div className="mt-4 bg-white/60 p-3 rounded-md text-sm text-green-900 font-medium flex items-center gap-2">
             <FaCheckCircle className="text-green-600" />
-            Todos los valores y cantidades cuadran al 100% entre el Pedimento y los Acuses COVE.
+            ¡Éxito! El pedimento ya tiene su COVE asociado y los valores cuadran al 100%.
           </div>
         )
       )}
