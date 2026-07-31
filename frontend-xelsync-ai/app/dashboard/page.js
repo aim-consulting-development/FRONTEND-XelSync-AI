@@ -24,6 +24,8 @@ import {
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   PieChart,
   Pie,
   Cell,
@@ -35,6 +37,7 @@ import {
 } from "recharts";
 
 const ESTADO_COLORS = {
+  INTERXEL_GENERADO: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
   APROBADO: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
   PROCESADO: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
   EN_REVISION: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
@@ -224,8 +227,51 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Estadísticas Personales (Solo Operador) */}
+      {kpis?.mis_estadisticas && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 rounded-xl shadow-lg p-5 border border-blue-100 dark:border-slate-700 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <FaEye className="text-blue-500" />
+            Mis Estadísticas Personales
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Asignados</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{kpis.mis_estadisticas.total_asignados}</p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm text-center border-b-4 border-purple-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">InterXel Generados (Listos)</p>
+              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{kpis.mis_estadisticas.interxel_generados}</p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm text-center border-b-4 border-orange-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Pendientes por Extraer</p>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{kpis.mis_estadisticas.pendientes}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gráficos principales */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        {/* Rendimiento por Operador (Solo Admin) */}
+        {kpis?.operadores_data && (
+          <div className="xl:col-span-3 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-slate-700 mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <FaChartLine className="text-blue-500" />
+              Rendimiento por Operador (En Tiempo Real)
+            </h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={kpis.operadores_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <XAxis dataKey="name" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ backgroundColor: "#1E293B", border: "none", borderRadius: "8px", color: "#fff" }} />
+                <Bar dataKey="cantidad" fill="#6366F1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* Tendencia de pedimentos */}
         <div className="xl:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-slate-700">
           <div className="flex justify-between items-center mb-4">

@@ -123,9 +123,6 @@ export default function PedimentoDetalle() {
   const handleDownloadInterxel = async () => {
     setSaving(true);
     try {
-      await api.put(`/pedimentos/${id}/aprobar`);
-      setPedimento(prev => ({ ...prev, estado: "APROBADO" }));
-      
       const response = await api.get(`/pedimentos/${id}/export_interxel`, {
         responseType: 'blob'
       });

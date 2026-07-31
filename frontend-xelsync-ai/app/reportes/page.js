@@ -210,7 +210,7 @@ export default function Reportes() {
       ) : (
         <div className="space-y-6" ref={dashboardRef}>
           {/* Tarjetas Superiores */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
               <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Valor Total en Aduana</h3>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -224,9 +224,17 @@ export default function Reportes() {
               </p>
             </div>
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-              <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Operaciones Registradas</h3>
+              <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-2">Pedimentos Registrados</h3>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {kpis?.pedimentos_hoy || 0}
+              </p>
+            </div>
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-sm rounded-2xl shadow-sm border border-indigo-100 dark:border-slate-700 p-6">
+              <h3 className="text-indigo-600 dark:text-indigo-400 font-medium text-sm mb-2 flex items-center gap-2">
+                <FaFileExcel /> InterXel Listos (Aranxel)
+              </h3>
+              <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                {kpis?.interxel_generados || 0}
               </p>
             </div>
           </div>

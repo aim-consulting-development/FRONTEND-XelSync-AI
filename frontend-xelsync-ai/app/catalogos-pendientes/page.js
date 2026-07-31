@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
+import MainLayout from '@/components/layout/MainLayout';
 import InfoModal from '@/components/shared/InfoModal';
 import { FaShieldAlt, FaCheckCircle, FaLink, FaExclamationTriangle, FaSearch, FaSpinner } from 'react-icons/fa';
 
