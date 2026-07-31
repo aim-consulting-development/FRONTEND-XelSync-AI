@@ -9,6 +9,7 @@ import ErrorBubbling from "@/components/pedimentos/ErrorBubbling";
 import TabsRevision from "@/components/pedimentos/TabsRevision";
 import JsonTreeViewer from "@/components/pedimentos/JsonTreeViewer";
 import CoveCompliancePanel from "@/components/pedimentos/CoveCompliancePanel";
+import GlosaCompliancePanel from "@/components/pedimentos/GlosaCompliancePanel";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/useAuth";
 
@@ -344,6 +345,9 @@ export default function PedimentoDetalle() {
 
           {/* CRUCE COVE / XML */}
           <CoveCompliancePanel validacion={pedimento.cruce_cove} />
+          
+          {/* CRUCE GLOSA (DATA STAGE) */}
+          <GlosaCompliancePanel validacion={pedimento.cruce_glosa} />
 
           {/* ERROR BUBBLING */}
           <ErrorBubbling 
