@@ -338,7 +338,7 @@ export default function PedimentoDetalle() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Operador</p>
-                <p className="font-semibold text-gray-900 dark:text-white truncate">Usuario Actual</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{pedimento.operador_nombre || "Sin asignar"}</p>
               </div>
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Cliente</p>
