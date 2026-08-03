@@ -19,7 +19,22 @@ import {
   FaCheckCircle,
   FaTh,
   FaList,
+  FaClock,
+  FaHistory,
+  FaFileAlt,
+  FaEye,
+  FaChartBar,
 } from "react-icons/fa";
+
+const ESTADO_COLORS = {
+  PENDIENTE: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  INCOMPLETO: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  EN_REVISION: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  PROCESADO: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  APROBADO: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  INTERXEL_GENERADO: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  RECHAZADO: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -27,9 +42,12 @@ export default function Usuarios() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCarteraOpen, setIsCarteraOpen] = useState(false);
+  const [isActividadOpen, setIsActividadOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [cartera, setCartera] = useState([]);
   const [carteraLoading, setCarteraLoading] = useState(false);
+  const [actividadData, setActividadData] = useState(null);
+  const [actividadLoading, setActividadLoading] = useState(false);
   const [viewMode, setViewMode] = useState("grid"); // "grid" o "list"
 
   // Formularios
@@ -102,6 +120,20 @@ export default function Usuarios() {
     }
   };
 
+  const openActividad = async (user) => {
+    setSelectedUser(user);
+    setIsActividadOpen(true);
+    setActividadLoading(true);
+    try {
+      const res = await api.get(`/usuarios/${user.id}/actividad`);
+      setActividadData(res.data);
+    } catch (error) {
+      console.error("Error cargando actividad:", error);
+    } finally {
+      setActividadLoading(false);
+    }
+  };
+
   const handleAddCartera = async (e) => {
     e.preventDefault();
     if (!nuevoClienteCartera) return;
@@ -163,6 +195,32 @@ export default function Usuarios() {
         {rol}
       </span>
     );
+  };
+
+  const formatUltimoAcceso = (fecha) => {
+    if (!fecha) return "Nunca";
+    const d = new Date(fecha);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHrs = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return "Justo ahora";
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHrs < 24) return `Hace ${diffHrs}h`;
+    if (diffDays < 7) return `Hace ${diffDays}d`;
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const getConexionColor = (fecha) => {
+    if (!fecha) return "text-gray-400";
+    const diffMs = new Date() - new Date(fecha);
+    const diffHrs = diffMs / 3600000;
+    if (diffHrs < 1) return "text-emerald-500";
+    if (diffHrs < 24) return "text-blue-500";
+    if (diffHrs < 72) return "text-amber-500";
+    return "text-red-400";
   };
 
   const filteredUsers = usuarios.filter(
@@ -264,7 +322,7 @@ export default function Usuarios() {
                 </div>
               </div>
 
-              <div className="space-y-2 mb-6">
+              <div className="space-y-2 mb-4">
                 <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                   <FaEnvelope className="text-gray-400" /> {user.email}
                 </p>
@@ -272,9 +330,34 @@ export default function Usuarios() {
                   <FaCheckCircle className={user.estado === "ACTIVO" ? "text-emerald-500" : "text-gray-400"} />
                   {user.estado === "ACTIVO" ? "Activo" : "Inactivo"}
                 </p>
+                <p className={`flex items-center gap-2 text-sm ${getConexionColor(user.ultimo_acceso)}`}>
+                  <FaClock /> Última conexión: {formatUltimoAcceso(user.ultimo_acceso)}
+                </p>
+              </div>
+
+              {/* Actividad resumen */}
+              <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-3 mb-4 border border-gray-100 dark:border-slate-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <FaFileAlt className="text-blue-400" />
+                    <span>Pedimentos: <span className="font-bold text-gray-900 dark:text-white">{user.pedimentos_procesados || 0}</span></span>
+                  </div>
+                  {user.ultimo_pedimento && (
+                    <span className="text-[10px] font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                      {user.ultimo_pedimento}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2 border-t border-gray-100 dark:border-slate-700 pt-4">
+                <button
+                  onClick={() => openActividad(user)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                  title="Ver Actividad"
+                >
+                  <FaHistory />
+                </button>
                 <button
                   onClick={() => openCartera(user)}
                   className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -314,6 +397,8 @@ export default function Usuarios() {
                   <th className="p-4 font-medium">Correo</th>
                   <th className="p-4 font-medium">Rol</th>
                   <th className="p-4 font-medium">Estado</th>
+                  <th className="p-4 font-medium">Última Conexión</th>
+                  <th className="p-4 font-medium">Pedimentos</th>
                   <th className="p-4 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
@@ -333,8 +418,30 @@ export default function Usuarios() {
                         <FaCheckCircle /> {user.estado === "ACTIVO" ? "Activo" : "Inactivo"}
                       </span>
                     </td>
+                    <td className="p-4">
+                      <span className={`flex items-center gap-1.5 text-xs ${getConexionColor(user.ultimo_acceso)}`}>
+                        <FaClock /> {formatUltimoAcceso(user.ultimo_acceso)}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 dark:text-white">{user.pedimentos_procesados || 0}</span>
+                        {user.ultimo_pedimento && (
+                          <span className="text-[10px] font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                            {user.ultimo_pedimento}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openActividad(user)}
+                          className="p-2 text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                          title="Ver Actividad"
+                        >
+                          <FaHistory />
+                        </button>
                         <button
                           onClick={() => openCartera(user)}
                           className="p-2 text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-400 dark:bg-slate-700/50 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -511,6 +618,103 @@ export default function Usuarios() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Actividad del Operador */}
+      {isActividadOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-700 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                  {selectedUser.nombre?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Actividad de {selectedUser.nombre}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedUser.email} • {selectedUser.rol}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsActividadOpen(false)} className="text-gray-400 hover:text-gray-500 p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {actividadLoading ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <FaSpinner className="animate-spin text-3xl text-blue-500 mb-3" />
+                  <p className="text-gray-500">Cargando actividad...</p>
+                </div>
+              ) : actividadData ? (
+                <>
+                  {/* Estadísticas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-800/30">
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{actividadData.estadisticas.total_pedimentos}</p>
+                      <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">Total Pedimentos</p>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center border border-emerald-100 dark:border-emerald-800/30">
+                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{actividadData.estadisticas.aprobados}</p>
+                      <p className="text-xs text-emerald-500 dark:text-emerald-300 mt-1">Aprobados</p>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center border border-amber-100 dark:border-amber-800/30">
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{actividadData.estadisticas.pendientes}</p>
+                      <p className="text-xs text-amber-500 dark:text-amber-300 mt-1">Pendientes</p>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-800/30">
+                      <p className={`text-sm font-bold ${getConexionColor(actividadData.usuario.ultimo_acceso)}`}>
+                        {formatUltimoAcceso(actividadData.usuario.ultimo_acceso)}
+                      </p>
+                      <p className="text-xs text-purple-500 dark:text-purple-300 mt-1">Última Conexión</p>
+                    </div>
+                  </div>
+
+                  {/* Historial de Pedimentos */}
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <FaHistory className="text-blue-500" /> Pedimentos Recientes
+                  </h3>
+                  
+                  {actividadData.pedimentos_recientes.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                      <FaFileAlt className="text-4xl mx-auto mb-3 opacity-30" />
+                      <p>Este usuario no tiene pedimentos registrados.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {actividadData.pedimentos_recientes.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-100 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+                          onClick={() => { setIsActividadOpen(false); router.push(`/pedimentos/${p.id}`); }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <p className="font-mono font-bold text-gray-900 dark:text-white text-sm">{p.pedimento}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.cliente_empresa || "Sin cliente"}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORS[p.estado] || ESTADO_COLORS.PENDIENTE}`}>
+                              {p.estado}
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {p.fecha_recepcion ? new Date(p.fecha_recepcion).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : "—"}
+                            </span>
+                            <FaEye className="text-blue-400 text-xs" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12 text-red-500">
+                  <p>Error al cargar la actividad del usuario.</p>
+                </div>
               )}
             </div>
           </div>
