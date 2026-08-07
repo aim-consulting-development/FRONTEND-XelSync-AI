@@ -79,9 +79,11 @@ export default function PedimentosPage() {
   const [estadoFilter, setEstadoFilter] = useState("");
   const [tipoFilter, setTipoFilter] = useState("");
   const [operadorFilter, setOperadorFilter] = useState("");
+  const [clienteFilter, setClienteFilter] = useState("");
   const [orden, setOrden] = useState("desc");
 
   const [operadores, setOperadores] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const { isAdmin } = useAuth();
 
   // ─── Selección para InterXel masivo ───
@@ -92,6 +94,14 @@ export default function PedimentosPage() {
     if (isAdmin) {
       api.get("/usuarios?limit=100").then(res => {
         setOperadores(res.data.items.filter(u => u.rol === "OPERADOR"));
+      }).catch(err => console.error(err));
+      
+      api.get("/usuarios/cartera/todos-los-clientes").then(res => {
+        setClientes(res.data.clientes || []);
+      }).catch(err => console.error(err));
+    } else {
+      api.get("/usuarios/me/cartera").then(res => {
+        setClientes(res.data.empresas || []);
       }).catch(err => console.error(err));
     }
   }, [isAdmin]);
@@ -107,6 +117,7 @@ export default function PedimentosPage() {
       if (estadoFilter) params.append("estado", estadoFilter);
       if (tipoFilter) params.append("tipo_operacion", tipoFilter);
       if (isAdmin && operadorFilter) params.append("operador_id", operadorFilter);
+      if (clienteFilter) params.append("cliente_empresa", clienteFilter);
       params.append("orden", orden);
 
       const res = await api.get(`/pedimentos?${params.toString()}`);
@@ -123,7 +134,7 @@ export default function PedimentosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, estadoFilter, tipoFilter, orden]);
+  }, [page, size, search, estadoFilter, tipoFilter, operadorFilter, clienteFilter, orden, isAdmin]);
 
   useEffect(() => {
     fetchPedimentos();
@@ -205,6 +216,35 @@ export default function PedimentosPage() {
           </button>
         )}
       </div>
+
+      {/* Pestañas por cliente */}
+      {clientes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <button
+            onClick={() => { setClienteFilter(""); setPage(1); }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              clienteFilter === "" 
+                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+            }`}
+          >
+            Todos los Clientes
+          </button>
+          {clientes.map(c => (
+            <button
+              key={c.cliente_empresa}
+              onClick={() => { setClienteFilter(c.cliente_empresa); setPage(1); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                clienteFilter === c.cliente_empresa 
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              }`}
+            >
+              {c.cliente_empresa}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
         {/* Filtros */}

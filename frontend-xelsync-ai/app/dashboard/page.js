@@ -64,15 +64,23 @@ export default function Dashboard() {
   const [ultimasOps, setUltimasOps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [clienteFilter, setClienteFilter] = useState("");
+  const [clientes, setClientes] = useState([]);
+  const { isAdmin } = useAuth();
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
+      const params = new URLSearchParams();
+      if (clienteFilter) params.append("cliente_empresa", clienteFilter);
+      
+      const kpisUrl = `/dashboard/kpis${clienteFilter ? '?' + params.toString() : ''}`;
+      
       const [kpisRes, alertasRes, opsRes] = await Promise.all([
-        api.get("/dashboard/kpis"),
+        api.get(kpisUrl),
         api.get("/dashboard/alertas-sla"),
-        api.get("/pedimentos?size=6&page=1"),
+        api.get(`/pedimentos?size=6&page=1${clienteFilter ? '&' + params.toString() : ''}`),
       ]);
       setKpis(kpisRes.data);
       setAlertas(alertasRes.data);
@@ -86,8 +94,20 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (isAdmin) {
+      api.get("/usuarios/cartera/todos-los-clientes").then(res => {
+        setClientes(res.data.clientes || []);
+      }).catch(err => console.error(err));
+    } else {
+      api.get("/usuarios/me/cartera").then(res => {
+        setClientes(res.data.empresas || []);
+      }).catch(err => console.error(err));
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [clienteFilter]);
 
   const formatUSD = (val) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val || 0);
@@ -200,6 +220,35 @@ export default function Dashboard() {
           Actualizar
         </button>
       </div>
+
+      {/* Pestañas por cliente */}
+      {clientes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <button
+            onClick={() => setClienteFilter("")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              clienteFilter === "" 
+                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+            }`}
+          >
+            Todos los Clientes
+          </button>
+          {clientes.map(c => (
+            <button
+              key={c.cliente_empresa}
+              onClick={() => setClienteFilter(c.cliente_empresa)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                clienteFilter === c.cliente_empresa 
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              }`}
+            >
+              {c.cliente_empresa}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
