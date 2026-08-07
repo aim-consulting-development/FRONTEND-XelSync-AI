@@ -82,6 +82,9 @@ export default function CargaArchivos() {
   const [batchStatus, setBatchStatus] = useState(null);
   const [showZipWarningModal, setShowZipWarningModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("Carga Masiva");
+  const [historial, setHistorial] = useState([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
   const pollingRef = useRef(null);

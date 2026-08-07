@@ -85,7 +85,7 @@ export default function PedimentoDetalle() {
       const res = await api.get(`/pedimentos/${id}`);
       setPedimento(res.data);
       // Extraemos el objeto original para bindear el form
-      setFormData(res.data?.json_extraccion?.encabezado_impo || res.data?.json_extraccion?.encabezado_expo || {});
+      setFormData(res.data?.json_extraccion?.encabezado_pedimento || res.data?.json_extraccion?.encabezado_pedimento_expo || {});
       fetchArchivoPdf();
     } catch (err) {
       console.error("Error cargando pedimento:", err);
@@ -275,8 +275,8 @@ export default function PedimentoDetalle() {
       <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-160px)] min-h-[600px] mb-20">
         
         {/* VISOR PDF (40%) */}
-        <div className="w-full lg:w-[40%] flex flex-col h-full sticky top-[80px]">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col flex-1 h-full">
+        <div className="w-full lg:w-[40%] flex flex-col h-full sticky top-[80px] min-w-0">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col flex-1 h-full min-h-0">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-4">
               <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <FaFileCode className="text-blue-500" /> Archivo Original
@@ -310,7 +310,7 @@ export default function PedimentoDetalle() {
         </div>
 
         {/* PANEL DE DATOS (60%) */}
-        <div className="w-full lg:w-[60%] flex flex-col h-full overflow-y-auto pr-2 pb-4">
+        <div className="w-full lg:w-[60%] flex flex-col h-full overflow-y-auto pr-2 pb-4 min-w-0">
           
           {/* HEADER RESUMEN */}
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mb-6">
@@ -341,8 +341,17 @@ export default function PedimentoDetalle() {
                 <p className="font-semibold text-gray-900 dark:text-white truncate">{pedimento.operador_nombre || "Sin asignar"}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Cliente</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Cliente Asignado</p>
                 <p className="font-semibold text-gray-900 dark:text-white truncate">{pedimento.cliente_empresa || "Sin asignar"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Imp / Exp (Extraído)</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate" title={pedimento.json_extraccion?.encabezado_pedimento?.importador_nombre || pedimento.json_extraccion?.encabezado_pedimento_expo?.exportador_nombre || "N/A"}>
+                  {pedimento.json_extraccion?.encabezado_pedimento?.importador_nombre || pedimento.json_extraccion?.encabezado_pedimento_expo?.exportador_nombre || "N/A"}
+                </p>
+                <p className="text-xs text-gray-500 truncate" title={pedimento.json_extraccion?.encabezado_pedimento?.importador_rfc || pedimento.json_extraccion?.encabezado_pedimento_expo?.exportador_rfc || ""}>
+                  {pedimento.json_extraccion?.encabezado_pedimento?.importador_rfc || pedimento.json_extraccion?.encabezado_pedimento_expo?.exportador_rfc || ""}
+                </p>
               </div>
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs uppercase">Campos Faltantes</p>

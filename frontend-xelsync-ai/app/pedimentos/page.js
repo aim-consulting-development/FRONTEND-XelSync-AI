@@ -16,6 +16,8 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaClock,
+  FaDownload,
+  FaCheckSquare,
 } from "react-icons/fa";
 
 const ESTADOS = [
@@ -46,6 +48,21 @@ export const ESTADO_COLORS = {
   RECHAZADO: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
+/**
+ * Determina si un pedimento tiene una fecha fuera de rango (Punto 1).
+ */
+function isFechaFueraDeRango(item) {
+  const fechaStr = item.fecha_despacho_agente || item.fecha_recepcion_sistema;
+  if (!fechaStr) return false;
+  const fecha = new Date(fechaStr);
+  const ahora = new Date();
+  if (fecha.getFullYear() < ahora.getFullYear()) return true;
+  const diffMs = ahora - fecha;
+  const diffMeses = diffMs / (1000 * 60 * 60 * 24 * 30);
+  if (diffMeses > 4) return true;
+  return false;
+}
+
 export default function PedimentosPage() {
   const router = useRouter();
   const { canWrite } = useAuth();
@@ -53,7 +70,6 @@ export default function PedimentosPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Paginación y Filtros
   const [page, setPage] = useState(1);
   const [size] = useState(15);
   const [total, setTotal] = useState(0);
@@ -67,6 +83,10 @@ export default function PedimentosPage() {
 
   const [operadores, setOperadores] = useState([]);
   const { isAdmin } = useAuth();
+
+  // ─── Selección para InterXel masivo ───
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [exportingLote, setExportingLote] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -95,7 +115,6 @@ export default function PedimentosPage() {
       setTotal(res.data.total || 0);
       setTotalPages(res.data.pages || 1);
 
-      // Guardar IDs para navegación Anterior/Siguiente en la vista de detalle
       const ids = fetchedItems.map(item => item.id);
       sessionStorage.setItem("pedimentosListIds", JSON.stringify(ids));
     } catch (err) {
@@ -116,6 +135,50 @@ export default function PedimentosPage() {
     fetchPedimentos();
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map(i => i.id)));
+    }
+  };
+
+  const handleExportLote = async () => {
+    if (selectedIds.size === 0) return;
+    setExportingLote(true);
+    try {
+      const res = await api.post("/pedimentos/interxel/lote", {
+        pedimento_ids: [...selectedIds]
+      }, { responseType: "blob" });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `InterXel_Lote_${selectedIds.size}_pedimentos.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSelectedIds(new Set());
+      fetchPedimentos();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.detail || "Error al generar InterXel masivo");
+    } finally {
+      setExportingLote(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -130,6 +193,17 @@ export default function PedimentosPage() {
             </p>
           </InfoModal>
         </div>
+
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleExportLote}
+            disabled={exportingLote}
+            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+          >
+            {exportingLote ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+            Generar InterXel ({selectedIds.size} seleccionados)
+          </button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
@@ -206,6 +280,15 @@ export default function PedimentosPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-700">
+                  <th className="p-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={items.length > 0 && selectedIds.size === items.length}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      title="Seleccionar todos"
+                    />
+                  </th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pedimento</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha de Carga</th>
@@ -217,65 +300,83 @@ export default function PedimentosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
-                {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="p-4">
-                      <div className="font-mono font-bold text-gray-900 dark:text-white text-sm">{item.pedimento}</div>
-                      <div className="text-xs text-gray-500 mt-1">{item.referencia_interna || "Sin ref"}</div>
-                    </td>
-                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
-                      {item.cliente_empresa}
-                    </td>
-                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
-                      {item.fecha_recepcion_sistema ? new Date(item.fecha_recepcion_sistema).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">
-                        {item.tipo_operacion || "—"}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden w-16">
-                          <div
-                            className={`h-full ${item.porcentaje_completitud === 100 ? "bg-green-500" : "bg-blue-500"}`}
-                            style={{ width: `${item.porcentaje_completitud || 0}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {Math.round(item.porcentaje_completitud || 0)}%
+                {items.map((item) => {
+                  const fueraDeRango = isFechaFueraDeRango(item);
+                  return (
+                    <tr key={item.id} className={`hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors ${selectedIds.has(item.id) ? "bg-indigo-50/50 dark:bg-indigo-900/10" : ""}`}>
+                      <td className="p-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div className="font-mono font-bold text-gray-900 dark:text-white text-sm">{item.pedimento}</div>
+                        <div className="text-xs text-gray-500 mt-1">{item.referencia_interna || "Sin ref"}</div>
+                      </td>
+                      <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                        {item.cliente_empresa}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {item.fecha_recepcion_sistema ? new Date(item.fecha_recepcion_sistema).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                         </span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 w-max ${SLA_COLORS[item.status_sla] || SLA_COLORS.NORMAL}`}>
-                        {item.status_sla === "VENCIDO" ? <FaExclamationTriangle /> : item.status_sla === "EN_RIESGO" ? <FaClock /> : <FaCheckCircle />}
-                        {item.status_sla?.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-1 items-start">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ESTADO_COLORS[item.estado] || ESTADO_COLORS.PENDIENTE}`}>
-                          {item.estado}
-                        </span>
-                        {item.cruce_cove && item.cruce_cove.xmls_encontrados === 0 && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50">
-                            Sin COVE
+                        {fueraDeRango && (
+                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50 animate-pulse">
+                            Fuera de Fecha
                           </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => router.push(`/pedimentos/${item.id}`)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                        title="Ver Detalles"
-                      >
-                        <FaEye size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">
+                          {item.tipo_operacion || "—"}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden w-16">
+                            <div
+                              className={`h-full ${item.porcentaje_completitud === 100 ? "bg-green-500" : "bg-blue-500"}`}
+                              style={{ width: `${item.porcentaje_completitud || 0}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            {Math.round(item.porcentaje_completitud || 0)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 w-max ${SLA_COLORS[item.status_sla] || SLA_COLORS.NORMAL}`}>
+                          {item.status_sla === "VENCIDO" ? <FaExclamationTriangle /> : item.status_sla === "EN_RIESGO" ? <FaClock /> : <FaCheckCircle />}
+                          {item.status_sla?.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ESTADO_COLORS[item.estado] || ESTADO_COLORS.PENDIENTE}`}>
+                            {item.estado}
+                          </span>
+                          {item.cruce_cove && item.cruce_cove.xmls_encontrados === 0 && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50">
+                              Sin COVE
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => router.push(`/pedimentos/${item.id}`)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Ver Detalles"
+                        >
+                          <FaEye size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -287,6 +388,11 @@ export default function PedimentosPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Mostrando página <span className="font-semibold text-gray-900 dark:text-white">{page}</span> de <span className="font-semibold text-gray-900 dark:text-white">{totalPages}</span>
               {' '}({total} resultados)
+              {selectedIds.size > 0 && (
+                <span className="ml-2 text-indigo-600 dark:text-indigo-400 font-medium">
+                  • {selectedIds.size} seleccionados
+                </span>
+              )}
             </p>
             <div className="flex gap-2">
               <button

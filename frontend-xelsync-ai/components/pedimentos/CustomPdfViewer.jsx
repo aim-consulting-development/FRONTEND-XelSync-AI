@@ -54,7 +54,7 @@ export default function CustomPdfViewer({ pdfUrl }) {
   const pageWidth = baseWidth > 0 ? baseWidth * scale : undefined;
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden relative">
+    <div className="flex flex-col h-full w-full bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden relative min-h-0">
       {/* Zoom Controls */}
       <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-white/90 dark:bg-slate-800/90 shadow-lg rounded-full px-3 py-2 border border-gray-200 dark:border-slate-700 backdrop-blur-sm">
         <button

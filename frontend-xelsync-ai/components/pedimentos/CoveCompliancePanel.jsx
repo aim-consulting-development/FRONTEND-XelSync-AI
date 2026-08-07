@@ -86,6 +86,17 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
         </div>
       </div>
 
+      {/* Alerta de múltiples COVEs (Punto 3) */}
+      {facturas_pedimento > 1 && (
+        <div className="mt-3 mb-2 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 p-3 rounded-lg text-sm font-medium">
+          <FaExclamationTriangle className="text-amber-500 text-lg flex-shrink-0" />
+          <div>
+            <span className="font-bold">Múltiples e-documentos/COVE detectados ({facturas_pedimento}).</span>{" "}
+            Se requiere validar la factura de cada COVE individualmente. Suba el XML o PDF de cada factura para completar la validación.
+          </div>
+        </div>
+      )}
+
       {discrepancias && discrepancias.length > 0 ? (
         <div className="mt-4">
           <h4 className="font-semibold mb-2">Discrepancias Detectadas:</h4>
