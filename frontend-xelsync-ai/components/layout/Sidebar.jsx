@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -21,11 +21,13 @@ import {
 } from "react-icons/fa";
 import Image from "next/image";
 import { useAuth } from "@/lib/useAuth";
+import api from "@/lib/api";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { isAdmin, isAuditor, isOperador, canWrite } = useAuth();
+  const [pendientesCount, setPendientesCount] = useState(0);
 
   // Definición de todos los items del menú con control de roles
   const allMenuItems = [
@@ -71,6 +73,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       href: "/catalogos-pendientes",
       icon: <FaShieldAlt />,
       roles: ["ADMIN", "OPERADOR", "AUDITOR"],
+      badge: pendientesCount > 0 ? pendientesCount : null,
     },
     {
       name: "Conciliación SAT",
@@ -123,6 +126,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const menuItems = allMenuItems.filter((item) =>
     item.roles.includes(userRol)
   );
+
+  useEffect(() => {
+    let interval;
+    if (["ADMIN", "OPERADOR", "AUDITOR"].includes(userRol)) {
+      const fetchCount = async () => {
+        try {
+          const res = await api.get("/catalogos-pendientes/count");
+          setPendientesCount(res.data.count || 0);
+        } catch (error) {
+          console.error("Error fetching pendientes count:", error);
+        }
+      };
+      
+      fetchCount(); // Initial fetch
+      interval = setInterval(fetchCount, 30000); // Poll every 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [userRol]);
 
   return (
     <>
@@ -223,13 +246,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {item.icon}
                 </span>
                 <span
-                  className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
+                  className={`transition-all duration-300 flex-1 whitespace-nowrap overflow-hidden flex items-center justify-between ${
                     isCollapsed
                       ? "w-0 opacity-0"
                       : "w-auto opacity-100 group-hover:translate-x-1"
                   }`}
                 >
-                  {item.name}
+                  <span>{item.name}</span>
+                  {item.badge && !isCollapsed && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">
+                      {item.badge}
+                    </span>
+                  )}
                 </span>
               </Link>
             );

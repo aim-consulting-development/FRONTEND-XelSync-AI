@@ -1,216 +1,126 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import api from '@/lib/api';
-import Navbar from '@/components/layout/Navbar';
-import Sidebar from '@/components/layout/Sidebar';
-import MainLayout from '@/components/layout/MainLayout';
-import InfoModal from '@/components/shared/InfoModal';
-import { FaShieldAlt, FaCheckCircle, FaLink, FaExclamationTriangle, FaSearch, FaSpinner } from 'react-icons/fa';
+import React, { useState, useEffect } from "react";
+import MainLayout from "@/components/layout/MainLayout";
+import api from "@/lib/api";
+import { FaCheck, FaTimes, FaSpinner, FaBoxOpen } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 
-export default function CatalogosPendientesPage() {
+export default function CatalogosPendientes() {
   const [pendientes, setPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('');
-  
-  // Modals for actions could go here, but for now we'll do direct actions with confirm
-  const [actionLoading, setActionLoading] = useState(null);
-
-  useEffect(() => {
-    fetchPendientes();
-  }, [filtroTipo]);
 
   const fetchPendientes = async () => {
     try {
       setLoading(true);
-      setError(null);
-      let url = '/catalogos/pendientes?estado=PENDIENTE&limit=50';
-      if (filtroTipo) url += `&tipo=${filtroTipo}`;
-      if (search) url += `&q=${search}`;
-      
-      const res = await api.get(url);
+      const res = await api.get("/catalogos-pendientes?estado=PENDIENTE&size=100");
       setPendientes(res.data.items || []);
-    } catch (err) {
-      console.error(err);
-      setError('Error al cargar la bandeja de cuarentena.');
+    } catch (error) {
+      toast.error("Error al cargar catálogos pendientes");
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  useEffect(() => {
     fetchPendientes();
-  };
+  }, []);
 
-  const handleAprobarAlta = async (id) => {
-    if (!confirm('¿Estás seguro de que deseas dar de alta este registro oficialmente en el catálogo maestro?')) return;
-    
+  const handleAprobar = async (id) => {
     try {
-      setActionLoading(id);
-      await api.post(`/catalogos/pendientes/${id}/alta`);
-      // Remover de la lista
-      setPendientes(prev => prev.filter(p => p.id !== id));
-      alert('Registro dado de alta correctamente.');
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.detail || 'Ocurrió un error al procesar el alta.');
-    } finally {
-      setActionLoading(null);
+      await api.post(`/catalogos-pendientes/${id}/aprobar`);
+      toast.success("Catálogo aprobado y guardado en la base de datos.");
+      fetchPendientes();
+    } catch (error) {
+      toast.error("Error al aprobar catálogo");
     }
   };
 
-  const handleVincular = async (id) => {
-    const catalogo_id = prompt('Ingresa el ID numérico del catálogo existente al que deseas vincular este registro:');
-    if (!catalogo_id || isNaN(catalogo_id)) return;
-    
+  const handleRechazar = async (id) => {
     try {
-      setActionLoading(id);
-      await api.post(`/catalogos/pendientes/${id}/vincular?catalogo_id=${catalogo_id}`);
-      setPendientes(prev => prev.filter(p => p.id !== id));
-      alert('Registro vinculado correctamente.');
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.detail || 'Ocurrió un error al vincular.');
-    } finally {
-      setActionLoading(null);
+      await api.post(`/catalogos-pendientes/${id}/rechazar`);
+      toast.success("Catálogo rechazado.");
+      fetchPendientes();
+    } catch (error) {
+      toast.error("Error al rechazar catálogo");
     }
   };
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <FaShieldAlt className="text-orange-500" />
-                  Bandeja de Cuarentena (Catálogos)
-                </h1>
-                <InfoModal title="Bandeja de Cuarentena">
-                  <p>
-                    Revisa las extracciones realizadas por la IA que no hicieron "match" automático con los catálogos de Comercio Exterior (Materiales, Proveedores, Clientes).
-                  </p>
-                  <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li><strong>Vincular:</strong> Relaciona este registro a un catálogo existente para "entrenar" a la IA y evitar duplicados.</li>
-                    <li><strong>Aprobar Alta:</strong> Da de alta oficialmente este registro nuevo en la base de datos de XelSync.</li>
-                  </ul>
-                </InfoModal>
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">
-                Registros extraídos por la IA que no se encontraron en los catálogos maestros. 
-                Aprueba su alta o vincúlalos a registros existentes para evitar duplicidad.
-              </p>
-            </div>
+      <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto py-8">
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <FaBoxOpen className="text-blue-500" /> Catálogos en Cuarentena
+            </h1>
+            <p className="text-zinc-400 mt-2">
+              Revisa y aprueba los registros extraídos por IA que no existen en los catálogos principales.
+            </p>
           </div>
+          <button
+            onClick={fetchPendientes}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition-colors"
+          >
+            Actualizar
+          </button>
+        </div>
 
-          {/* Filtros */}
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 mb-6 flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex gap-4">
-              <select 
-                value={filtroTipo} 
-                onChange={(e) => setFiltroTipo(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">Todos los tipos</option>
-                <option value="MATERIAL">Materiales</option>
-                <option value="PROVEEDOR">Proveedores</option>
-                <option value="CLIENTE">Clientes</option>
-              </select>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden relative min-h-[400px]">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm z-10">
+              <FaSpinner className="animate-spin text-4xl text-blue-500" />
             </div>
-            
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Buscar clave o descripción..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg w-64 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <button type="submit" className="bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg flex items-center gap-2">
-                <FaSearch size={18} />
-              </button>
-            </form>
-          </div>
-
-          {/* Tabla */}
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+          ) : pendientes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[400px] text-zinc-500">
+              <FaBoxOpen className="text-6xl mb-4 text-zinc-700" />
+              <p className="text-lg">No hay registros pendientes de revisión</p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">
-                    <th className="px-6 py-4 font-medium">Tipo</th>
-                    <th className="px-6 py-4 font-medium">Clave Extraída</th>
-                    <th className="px-6 py-4 font-medium">Descripción</th>
-                    <th className="px-6 py-4 font-medium text-center">Acciones</th>
+              <table className="w-full text-sm text-left text-zinc-400">
+                <thead className="text-xs text-zinc-400 uppercase bg-zinc-900/50 border-b border-zinc-800">
+                  <tr>
+                    <th className="px-4 py-3">Tipo</th>
+                    <th className="px-4 py-3">Clave/RFC</th>
+                    <th className="px-4 py-3">Nombre/Descripción</th>
+                    <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                  {loading ? (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
-                        <FaSpinner className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
-                        Cargando bandeja...
+                <tbody>
+                  {pendientes.map((item) => (
+                    <tr key={item.id} className="border-b border-zinc-800 hover:bg-zinc-800/30">
+                      <td className="px-4 py-3 font-medium text-zinc-200">
+                        {item.tipo}
+                      </td>
+                      <td className="px-4 py-3">{item.clave_extraida}</td>
+                      <td className="px-4 py-3 truncate max-w-[300px]" title={item.descripcion_extraida}>
+                        {item.descripcion_extraida}
+                      </td>
+                      <td className="px-4 py-3 flex justify-end gap-2">
+                        <button
+                          onClick={() => handleAprobar(item.id)}
+                          title="Aprobar"
+                          className="flex items-center justify-center p-2 rounded-md bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition-colors"
+                        >
+                          <FaCheck />
+                        </button>
+                        <button
+                          onClick={() => handleRechazar(item.id)}
+                          title="Rechazar"
+                          className="flex items-center justify-center p-2 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                          <FaTimes />
+                        </button>
                       </td>
                     </tr>
-                  ) : pendientes.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center">
-                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
-                          <FaCheckCircle size={24} />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">Bandeja Limpia</h3>
-                        <p className="text-gray-500">No hay catálogos pendientes de revisión.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    pendientes.map((item) => (
-                      <tr key={item.id} className="hover:bg-orange-50/50 dark:hover:bg-slate-700 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                            item.tipo === 'MATERIAL' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' : 
-                            item.tipo === 'PROVEEDOR' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
-                            'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
-                          }`}>
-                            {item.tipo}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                          {item.clave_extraida}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                          {item.descripcion_extraida || <span className="text-gray-400 dark:text-gray-500 italic">Sin descripción</span>}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleVincular(item.id)}
-                              disabled={actionLoading === item.id}
-                              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 focus:ring-2 focus:ring-gray-200 disabled:opacity-50 flex items-center gap-1.5"
-                              title="Vincular a un registro existente"
-                            >
-                              <FaLink size={16} /> Vincular
-                            </button>
-                            <button
-                              onClick={() => handleAprobarAlta(item.id)}
-                              disabled={actionLoading === item.id}
-                              className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-1 disabled:opacity-50 flex items-center gap-1.5"
-                              title="Dar de alta como nuevo registro"
-                            >
-                              {actionLoading === item.id ? <FaSpinner size={16} className="animate-spin" /> : <FaCheckCircle size={16} />}
-                              Aprobar Alta
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   );
