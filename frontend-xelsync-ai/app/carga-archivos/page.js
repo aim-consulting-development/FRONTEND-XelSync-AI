@@ -24,16 +24,13 @@ import {
   FaPlay,
 } from "react-icons/fa";
 
-// ─── Constantes ───────────────────────────────────────
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/zip",
   "application/x-zip-compressed",
-  "text/plain",
-  "text/csv",
   "application/octet-stream",
 ];
-const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".txt", ".csv", ".asc", ".err"];
+const ALLOWED_EXTENSIONS = [".pdf", ".zip"];
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -57,7 +54,6 @@ function getStatusBadge(estado) {
     SUBIENDO: { color: "bg-blue-500/10 text-blue-500 border-blue-500/20", icon: <FaSpinner className="animate-spin text-[10px]" />, label: "Subiendo" },
     EXTRAYENDO: { color: "bg-amber-500/10 text-amber-500 border-amber-500/20", icon: <FaSpinner className="animate-spin text-[10px]" />, label: "Extrayendo IA" },
     "EXTRAYENDO ZIP": { color: "bg-purple-500/10 text-purple-500 border-purple-500/20", icon: <FaSpinner className="animate-spin text-[10px]" />, label: "Descomprimiendo" },
-    "EXTRAYENDO GLOSA": { color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", icon: <FaSpinner className="animate-spin text-[10px]" />, label: "Procesando Glosa" },
     VALIDANDO: { color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", icon: <FaSpinner className="animate-spin text-[10px]" />, label: "Validando" },
     COMPLETADO: { color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", icon: <FaCheckCircle className="text-[10px]" />, label: "Completado" },
     ERROR: { color: "bg-red-500/10 text-red-500 border-red-500/20", icon: <FaExclamationCircle className="text-[10px]" />, label: "Error" },
@@ -327,9 +323,11 @@ export default function CargaArchivos() {
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li><strong>PDF:</strong> Pedimentos simples (IA los extraerá).</li>
-              <li><strong>ZIP:</strong> Para carga masiva (fan-out automático).</li>
-              <li><strong>Glosa/M3:</strong> Archivos del SAT para validación cruzada.</li>
+              <li><strong>ZIP:</strong> Para carga masiva (descompresión automática).</li>
             </ul>
+            <p className="mt-2 text-xs text-yellow-500">
+              Nota: La carga de Glosas y archivos M3 se ha movido al módulo de Conciliación SAT.
+            </p>
           </InfoModal>
         </div>
       </div>
@@ -416,15 +414,13 @@ export default function CargaArchivos() {
             </button>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-            PDF, ZIP, TXT, CSV, ASC — Máximo {MAX_FILE_SIZE_MB}MB por archivo
+            PDF, ZIP — Máximo {MAX_FILE_SIZE_MB}MB por archivo
           </p>
 
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {[
               { ext: ".pdf", label: "Pedimentos", color: "text-red-500 bg-red-500/10 border-red-500/20" },
               { ext: ".zip", label: "Carpetas", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-              { ext: ".txt", label: "Archivos M3", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-              { ext: ".asc", label: "Glosas SAT", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
             ].map((t) => (
               <span
                 key={t.ext}

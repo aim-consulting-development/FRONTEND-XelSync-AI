@@ -53,8 +53,8 @@ export default function ConciliacionPage() {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-    if (!file.name.endsWith(".zip") && !file.name.endsWith(".asc")) {
-      setError("Solo se aceptan archivos .zip o .asc del SAT.");
+    if (!file.name.endsWith(".zip") && !file.name.endsWith(".asc") && !file.name.endsWith(".txt")) {
+      setError("Solo se aceptan archivos .zip, .asc (Glosa) o .txt (M3).");
       return;
     }
     setUploadedFile(file.name);
@@ -65,7 +65,7 @@ export default function ConciliacionPage() {
 
   const handleExecute = async () => {
     if (!uploadedFileObj) {
-      setError("Debes seleccionar un archivo SAT (.zip o .asc) antes de ejecutar.");
+      setError("Debes seleccionar un archivo (.zip, .asc o .txt) antes de ejecutar.");
       return;
     }
     setIsProcessing(true);
