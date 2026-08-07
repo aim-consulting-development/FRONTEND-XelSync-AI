@@ -5,6 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import {
   FaArrowUp,
   FaArrowDown,
