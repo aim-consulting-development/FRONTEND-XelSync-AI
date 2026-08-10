@@ -17,6 +17,7 @@ import {
   FaSpinner,
   FaCog,
   FaClock,
+  FaBoxOpen,
 } from "react-icons/fa";
 import Image from "next/image";
 import api from "@/lib/api";
@@ -328,20 +329,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* C13: BADGE CATÁLOGOS PENDIENTES */}
-        {catalogosPendientes > 0 && (
-          <Link
-            href="/catalogos-pendientes"
-            title={`${catalogosPendientes} catálogos en cuarentena`}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
-          >
-            <FaCog className="text-amber-500" />
-            <span className="hidden sm:inline">Cuarentena</span>
-            <span className="min-w-[18px] h-[18px] bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-              {catalogosPendientes > 99 ? "99+" : catalogosPendientes}
-            </span>
-          </Link>
-        )}
+        {/* BADGE DE CUARENTENA REMOVIDO (Movido al interior de notificaciones) */}
 
         {/* NOTIFICACIONES */}
         <div className="relative" ref={notificationRef}>
@@ -350,9 +338,9 @@ export default function Navbar() {
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
           >
             <FaBell className="text-gray-600 dark:text-gray-400 text-lg" />
-            {unreadCount > 0 && (
+            {(unreadCount > 0 || catalogosPendientes > 0) && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                {unreadCount > 99 ? "99+" : unreadCount}
+                {(unreadCount + catalogosPendientes) > 99 ? "99+" : (unreadCount + catalogosPendientes)}
               </span>
             )}
           </button>
@@ -364,9 +352,9 @@ export default function Navbar() {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   <FaBell className="text-blue-500" />
                   Notificaciones
-                  {unreadCount > 0 && (
+                  {(unreadCount > 0 || catalogosPendientes > 0) && (
                     <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                      {unreadCount}
+                      {unreadCount + catalogosPendientes}
                     </span>
                   )}
                 </h3>
@@ -383,6 +371,22 @@ export default function Navbar() {
 
               {/* Lista */}
               <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-800">
+                {catalogosPendientes > 0 && (
+                  <Link href="/catalogos-pendientes" onClick={() => setShowNotifications(false)} className="p-3 flex gap-3 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors bg-amber-50/50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/30">
+                    <div className="mt-1 flex-shrink-0">
+                      <FaBoxOpen className="text-amber-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-400">
+                        Catálogos en Cuarentena
+                        <span className="ml-2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold inline-block animate-pulse">{catalogosPendientes}</span>
+                      </p>
+                      <p className="text-xs text-amber-700/70 dark:text-amber-500/70 mt-0.5">
+                        Existen registros extraídos por IA pendientes de validación
+                      </p>
+                    </div>
+                  </Link>
+                )}
                 {notifLoading ? (
                   <div className="p-6 text-center">
                     <FaSpinner className="animate-spin text-blue-500 text-2xl mx-auto" />

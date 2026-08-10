@@ -63,35 +63,35 @@ export default function CatalogosPendientes() {
       <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto py-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
               <FaBoxOpen className="text-blue-500" /> Catálogos en Cuarentena
             </h1>
-            <p className="text-zinc-400 mt-2">
+            <p className="text-gray-500 dark:text-slate-400 mt-2">
               Revisa y aprueba los registros extraídos por IA que no existen en los catálogos principales.
             </p>
           </div>
           <button
             onClick={fetchPendientes}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
           >
             Actualizar
           </button>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden relative min-h-[400px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden relative min-h-[400px]">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm z-10">
               <FaSpinner className="animate-spin text-4xl text-blue-500" />
             </div>
           ) : pendientes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[400px] text-zinc-500">
-              <FaBoxOpen className="text-6xl mb-4 text-zinc-700" />
+            <div className="flex flex-col items-center justify-center h-[400px] text-gray-400 dark:text-slate-500">
+              <FaBoxOpen className="text-6xl mb-4 text-gray-300 dark:text-slate-600" />
               <p className="text-lg">No hay registros pendientes de revisión</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-zinc-400">
-                <thead className="text-xs text-zinc-400 uppercase bg-zinc-900/50 border-b border-zinc-800">
+              <table className="w-full text-sm text-left text-gray-600 dark:text-slate-300">
+                <thead className="text-xs text-gray-500 dark:text-slate-400 uppercase bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">
                   <tr>
                     <th className="px-4 py-3">Tipo</th>
                     <th className="px-4 py-3">Clave/RFC</th>
@@ -101,12 +101,12 @@ export default function CatalogosPendientes() {
                 </thead>
                 <tbody>
                   {pendientes.map((item) => (
-                    <tr key={item.id} className="border-b border-zinc-800 hover:bg-zinc-800/30">
-                      <td className="px-4 py-3 font-medium text-zinc-200">
+                    <tr key={item.id} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                         {item.tipo}
                       </td>
-                      <td className="px-4 py-3">{item.clave_extraida}</td>
-                      <td className="px-4 py-3 truncate max-w-[300px]" title={item.descripcion_extraida}>
+                      <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{item.clave_extraida}</td>
+                      <td className="px-4 py-3 truncate max-w-[300px] text-gray-700 dark:text-slate-300" title={item.descripcion_extraida}>
                         {item.descripcion_extraida}
                       </td>
                       <td className="px-4 py-3 flex justify-end gap-2">
@@ -115,14 +115,14 @@ export default function CatalogosPendientes() {
                             <button
                               onClick={() => handleAprobar(item.id)}
                               title="Aprobar"
-                              className="flex items-center justify-center p-2 rounded-md bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition-colors"
+                              className="flex items-center justify-center p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors"
                             >
                               <FaCheck />
                             </button>
                             <button
                               onClick={() => handleRechazar(item.id)}
                               title="Rechazar"
-                              className="flex items-center justify-center p-2 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                              className="flex items-center justify-center p-2 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                             >
                               <FaTimes />
                             </button>
@@ -131,10 +131,10 @@ export default function CatalogosPendientes() {
                           <button
                             onClick={() => handleSolicitarAprobacion(item.id)}
                             title="Solicitar Aprobación"
-                            className="flex items-center justify-center gap-2 p-2 rounded-md bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-colors"
+                            className="flex items-center justify-center gap-2 p-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 hover:bg-blue-500 hover:text-white transition-colors"
                           >
                             <FaPaperPlane />
-                            <span className="text-xs">Solicitar</span>
+                            <span className="text-xs font-semibold">Solicitar</span>
                           </button>
                         ) : null}
                       </td>
