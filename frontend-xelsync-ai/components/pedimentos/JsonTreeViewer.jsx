@@ -102,9 +102,46 @@ export default function JsonTreeViewer({ data }) {
     try {
       parsedData = JSON.parse(data);
     } catch (e) {
-      // If it's not valid JSON (e.g. M3 plain text), render as pre-wrap
+      // If it's not valid JSON (e.g. M3 plain text), render as a structured table
+      const lines = data.split('\n').filter(line => line.trim() !== '');
+      if (lines.length > 0 && lines[0].includes('|')) {
+        const maxCols = Math.max(...lines.map(l => l.split('|').length));
+        return (
+          <div className="w-full h-full overflow-auto bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 shadow-inner">
+            <table className="w-full text-xs text-left border-collapse font-mono whitespace-nowrap">
+              <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-slate-800">
+                <tr className="text-gray-600 dark:text-gray-300">
+                  <th className="p-2 border-b border-r dark:border-slate-700 w-10 text-center font-bold">#</th>
+                  {Array.from({ length: maxCols }).map((_, i) => (
+                    <th key={i} className="p-2 border-b border-r dark:border-slate-700 font-semibold">Col {i + 1}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                {lines.map((line, rowIdx) => {
+                  const cols = line.split('|');
+                  return (
+                    <tr key={rowIdx} className="hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                      <td className="p-2 border-r dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 font-bold text-center">
+                        {rowIdx + 1}
+                      </td>
+                      {Array.from({ length: maxCols }).map((_, colIdx) => (
+                        <td key={colIdx} className="p-2 border-r dark:border-slate-700 text-gray-800 dark:text-gray-200">
+                          {cols[colIdx] || ""}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      
+      // Fallback for regular text
       return (
-        <pre className="p-4 bg-gray-50 dark:bg-slate-900 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap leading-relaxed border border-gray-200 dark:border-slate-700">
+        <pre className="p-4 w-full bg-gray-50 dark:bg-slate-900 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap break-words leading-relaxed border border-gray-200 dark:border-slate-700">
           {data}
         </pre>
       );
