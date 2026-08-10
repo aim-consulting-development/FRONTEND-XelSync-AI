@@ -403,7 +403,6 @@ export default function CargaArchivos() {
           ref={fileInputRef}
           type="file"
           multiple
-          accept={ALLOWED_EXTENSIONS.join(",")}
           onChange={(e) => {
             if (e.target.files?.length) addFiles(e.target.files);
             e.target.value = "";
