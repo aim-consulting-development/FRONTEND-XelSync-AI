@@ -18,6 +18,7 @@ import {
   FaClock,
   FaDownload,
   FaCheckSquare,
+  FaTrashAlt,
 } from "react-icons/fa";
 
 const ESTADOS = [
@@ -243,7 +244,7 @@ export default function PedimentosPage() {
               className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-xl transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
               title="Borrar seleccionados"
             >
-              {deletingLote ? <FaSpinner className="animate-spin" /> : <span>🗑️</span>}
+              {deletingLote ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
               Borrar ({selectedIds.size})
             </button>
             <button
@@ -316,7 +317,10 @@ export default function PedimentosPage() {
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
             }`}
           >
-            ⚠️ Pendientes de Cliente
+            <span className="flex items-center gap-2">
+              <FaExclamationTriangle className="text-amber-500" />
+              Pendientes de Cliente
+            </span>
           </button>
         </div>
       )}
