@@ -81,14 +81,16 @@ export default function PedimentosPage() {
   const [operadorFilter, setOperadorFilter] = useState("");
   const [clienteFilter, setClienteFilter] = useState("");
   const [orden, setOrden] = useState("desc");
+  const [tabMode, setTabMode] = useState("ACTIVOS"); // ACTIVOS | HISTORIAL
 
   const [operadores, setOperadores] = useState([]);
   const [clientes, setClientes] = useState([]);
   const { isAdmin } = useAuth();
 
-  // ─── Selección para InterXel masivo ───
+  // ─── Selección para InterXel masivo y Borrado ───
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [exportingLote, setExportingLote] = useState(false);
+  const [deletingLote, setDeletingLote] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -114,7 +116,15 @@ export default function PedimentosPage() {
         size: size
       });
       if (search) params.append("q", search);
-      if (estadoFilter) params.append("estado", estadoFilter);
+      if (estadoFilter) {
+        params.append("estado", estadoFilter);
+      } else {
+        if (tabMode === "ACTIVOS") {
+          params.append("exclude_estado", "INTERXEL_GENERADO");
+        } else if (tabMode === "HISTORIAL") {
+          params.append("estado", "INTERXEL_GENERADO");
+        }
+      }
       if (tipoFilter) params.append("tipo_operacion", tipoFilter);
       if (isAdmin && operadorFilter) params.append("operador_id", operadorFilter);
       if (clienteFilter) params.append("cliente_empresa", clienteFilter);
@@ -134,9 +144,10 @@ export default function PedimentosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, estadoFilter, tipoFilter, operadorFilter, clienteFilter, orden, isAdmin]);
+  }, [page, size, search, estadoFilter, tipoFilter, operadorFilter, clienteFilter, orden, isAdmin, tabMode]);
 
   useEffect(() => {
+    setSelectedIds(new Set());
     fetchPedimentos();
   }, [fetchPedimentos]);
 
@@ -190,6 +201,25 @@ export default function PedimentosPage() {
     }
   };
 
+  const handleDeleteLote = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar ${selectedIds.size} pedimento(s)? Esta acción los ocultará del sistema.`)) return;
+    
+    setDeletingLote(true);
+    try {
+      await api.delete("/pedimentos/lote", {
+        data: { pedimento_ids: [...selectedIds] }
+      });
+      setSelectedIds(new Set());
+      fetchPedimentos();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.detail || "Error al eliminar pedimentos");
+    } finally {
+      setDeletingLote(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -206,15 +236,50 @@ export default function PedimentosPage() {
         </div>
 
         {selectedIds.size > 0 && (
-          <button
-            onClick={handleExportLote}
-            disabled={exportingLote}
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
-          >
-            {exportingLote ? <FaSpinner className="animate-spin" /> : <FaDownload />}
-            Generar InterXel ({selectedIds.size} seleccionados)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDeleteLote}
+              disabled={deletingLote}
+              className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-xl transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+              title="Borrar seleccionados"
+            >
+              {deletingLote ? <FaSpinner className="animate-spin" /> : <span>🗑️</span>}
+              Borrar ({selectedIds.size})
+            </button>
+            <button
+              onClick={handleExportLote}
+              disabled={exportingLote}
+              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+            >
+              {exportingLote ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+              Generar InterXel ({selectedIds.size})
+            </button>
+          </div>
         )}
+      </div>
+
+      {/* Tabs principales: Activos vs Historial */}
+      <div className="flex gap-4 border-b border-gray-200 dark:border-slate-700 mb-6">
+        <button
+          onClick={() => { setTabMode("ACTIVOS"); setPage(1); }}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+            tabMode === "ACTIVOS"
+              ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          Pendientes y Activos
+        </button>
+        <button
+          onClick={() => { setTabMode("HISTORIAL"); setPage(1); }}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+            tabMode === "HISTORIAL"
+              ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
+        >
+          Historial (Generados)
+        </button>
       </div>
 
       {/* Pestañas por cliente */}
