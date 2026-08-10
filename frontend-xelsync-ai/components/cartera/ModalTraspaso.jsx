@@ -24,11 +24,9 @@ export default function ModalTraspaso({ isOpen, onClose, clienteEmpresa }) {
   const fetchOperadores = async () => {
     setLoading(true);
     try {
-      // Pedimos lista de usuarios
-      const res = await api.get("/usuarios?limit=100");
-      // Filtramos solo los operadores
-      const ops = res.data.items.filter(u => u.rol === "OPERADOR");
-      setOperadores(ops);
+      // Pedimos lista de operadores activos (nuevo endpoint público para operadores)
+      const res = await api.get("/usuarios/operadores-activos");
+      setOperadores(res.data.items || []);
     } catch (err) {
       setError("Error al cargar la lista de operadores.");
     } finally {

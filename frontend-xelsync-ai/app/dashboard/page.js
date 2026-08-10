@@ -67,6 +67,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [clienteFilter, setClienteFilter] = useState("");
   const [clientes, setClientes] = useState([]);
+  const [bitacoraOperadores, setBitacoraOperadores] = useState([]);
   const { isAdmin } = useAuth();
 
   const fetchData = async (silent = false) => {
@@ -78,14 +79,16 @@ export default function Dashboard() {
       
       const kpisUrl = `/dashboard/kpis${clienteFilter ? '?' + params.toString() : ''}`;
       
-      const [kpisRes, alertasRes, opsRes] = await Promise.all([
+      const [kpisRes, alertasRes, opsRes, bitacoraRes] = await Promise.all([
         api.get(kpisUrl),
         api.get("/dashboard/alertas-sla"),
         api.get(`/pedimentos?size=6&page=1${clienteFilter ? '&' + params.toString() : ''}`),
+        isAdmin ? api.get("/dashboard/bitacora/operadores") : Promise.resolve({ data: [] }),
       ]);
       setKpis(kpisRes.data);
       setAlertas(alertasRes.data);
       setUltimasOps(opsRes.data.items || []);
+      if (isAdmin) setBitacoraOperadores(bitacoraRes.data);
     } catch (err) {
       console.error("Error cargando dashboard:", err);
     } finally {
@@ -305,20 +308,52 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
         {/* Rendimiento por Operador (Solo Admin) */}
         {kpis?.operadores_data && (
-          <div className="xl:col-span-3 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-slate-700 mb-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <FaChartLine className="text-blue-500" />
-              Rendimiento por Operador (En Tiempo Real)
-            </h2>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={kpis.operadores_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis dataKey="name" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ backgroundColor: "#1E293B", border: "none", borderRadius: "8px", color: "#fff" }} />
-                <Bar dataKey="cantidad" fill="#6366F1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 col-span-1 lg:col-span-1">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Top Operadores (Pedimentos Procesados)</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={kpis.operadores_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="cantidad" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Eficiencia de Operadores (Bitácora) */}
+        {isAdmin && bitacoraOperadores.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 col-span-1 lg:col-span-2">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Eficiencia de Operadores (SLA 8 Hrs)</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-slate-700 dark:text-gray-300">
+                  <tr>
+                    <th className="px-4 py-3">Operador</th>
+                    <th className="px-4 py-3">Inicio de Sesión</th>
+                    <th className="px-4 py-3">Horas Activas</th>
+                    <th className="px-4 py-3">Estado SLA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bitacoraOperadores.map((bo, idx) => (
+                    <tr key={idx} className="border-b dark:border-slate-700 bg-white dark:bg-slate-800">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{bo.operador}</td>
+                      <td className="px-4 py-3">{new Date(bo.inicio_sesion).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-mono">{bo.horas_activas.toFixed(2)}h</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${bo.excedido ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                          {bo.excedido ? "SLA EXCEDIDO" : "EN TIEMPO"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

@@ -48,6 +48,11 @@ export default function Usuarios() {
   const [carteraLoading, setCarteraLoading] = useState(false);
   const [actividadData, setActividadData] = useState(null);
   const [actividadLoading, setActividadLoading] = useState(false);
+  // C17: Bitácora
+  const [bitacoraData, setBitacoraData] = useState(null);
+  const [bitacoraLoading, setBitacoraLoading] = useState(false);
+  const [bitacoraRango, setBitacoraRango] = useState("semana");
+  const [actividadTab, setActividadTab] = useState("actividad"); // "actividad" | "bitacora"
   const [viewMode, setViewMode] = useState("grid"); // "grid" o "list"
 
   // Formularios
@@ -124,6 +129,8 @@ export default function Usuarios() {
     setSelectedUser(user);
     setIsActividadOpen(true);
     setActividadLoading(true);
+    setActividadTab("actividad");
+    setBitacoraData(null);
     try {
       const res = await api.get(`/usuarios/${user.id}/actividad`);
       setActividadData(res.data);
@@ -132,6 +139,32 @@ export default function Usuarios() {
     } finally {
       setActividadLoading(false);
     }
+  };
+
+  // C17: Cargar bitácora de sesiones
+  const loadBitacora = async (userId, rango = "semana") => {
+    setBitacoraLoading(true);
+    try {
+      const res = await api.get(`/usuarios/${userId}/bitacora?rango=${rango}`);
+      setBitacoraData(res.data);
+    } catch (error) {
+      console.error("Error cargando bitácora:", error);
+      setBitacoraData(null);
+    } finally {
+      setBitacoraLoading(false);
+    }
+  };
+
+  const handleBitacoraTabClick = () => {
+    setActividadTab("bitacora");
+    if (selectedUser && !bitacoraData) {
+      loadBitacora(selectedUser.id, bitacoraRango);
+    }
+  };
+
+  const handleBitacoraRangoChange = (nuevoRango) => {
+    setBitacoraRango(nuevoRango);
+    if (selectedUser) loadBitacora(selectedUser.id, nuevoRango);
   };
 
   const handleAddCartera = async (e) => {
@@ -627,7 +660,7 @@ export default function Usuarios() {
       {/* Modal Actividad del Operador */}
       {isActividadOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-700 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
@@ -643,77 +676,200 @@ export default function Usuarios() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1">
-              {actividadLoading ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <FaSpinner className="animate-spin text-3xl text-blue-500 mb-3" />
-                  <p className="text-gray-500">Cargando actividad...</p>
-                </div>
-              ) : actividadData ? (
-                <>
-                  {/* Estadísticas */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-800/30">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{actividadData.estadisticas.total_pedimentos}</p>
-                      <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">Total Pedimentos</p>
-                    </div>
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center border border-emerald-100 dark:border-emerald-800/30">
-                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{actividadData.estadisticas.aprobados}</p>
-                      <p className="text-xs text-emerald-500 dark:text-emerald-300 mt-1">Aprobados</p>
-                    </div>
-                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center border border-amber-100 dark:border-amber-800/30">
-                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{actividadData.estadisticas.pendientes}</p>
-                      <p className="text-xs text-amber-500 dark:text-amber-300 mt-1">Pendientes</p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-800/30">
-                      <p className={`text-sm font-bold ${getConexionColor(actividadData.usuario.ultimo_acceso)}`}>
-                        {formatUltimoAcceso(actividadData.usuario.ultimo_acceso)}
-                      </p>
-                      <p className="text-xs text-purple-500 dark:text-purple-300 mt-1">Última Conexión</p>
-                    </div>
-                  </div>
+            {/* C17: Sub-tabs Actividad | Bitácora */}
+            <div className="flex border-b border-gray-100 dark:border-slate-700 shrink-0">
+              <button
+                onClick={() => setActividadTab("actividad")}
+                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  actividadTab === "actividad"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                }`}
+              >
+                <FaHistory className="inline mr-2" />Actividad de Pedimentos
+              </button>
+              <button
+                onClick={handleBitacoraTabClick}
+                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  actividadTab === "bitacora"
+                    ? "border-purple-500 text-purple-600 dark:text-purple-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                }`}
+              >
+                <FaClock className="inline mr-2" />Bitácora de Sesiones
+              </button>
+            </div>
 
-                  {/* Historial de Pedimentos */}
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <FaHistory className="text-blue-500" /> Pedimentos Recientes
-                  </h3>
-                  
-                  {actividadData.pedimentos_recientes.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                      <FaFileAlt className="text-4xl mx-auto mb-3 opacity-30" />
-                      <p>Este usuario no tiene pedimentos registrados.</p>
+            <div className="p-6 overflow-y-auto flex-1">
+              {actividadTab === "actividad" && (
+                actividadLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <FaSpinner className="animate-spin text-3xl text-blue-500 mb-3" />
+                    <p className="text-gray-500">Cargando actividad...</p>
+                  </div>
+                ) : actividadData ? (
+                  <>
+                    {/* Estadísticas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-800/30">
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{actividadData.estadisticas.total_pedimentos}</p>
+                        <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">Total Pedimentos</p>
+                      </div>
+                      <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center border border-emerald-100 dark:border-emerald-800/30">
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{actividadData.estadisticas.aprobados}</p>
+                        <p className="text-xs text-emerald-500 dark:text-emerald-300 mt-1">Aprobados</p>
+                      </div>
+                      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center border border-amber-100 dark:border-amber-800/30">
+                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{actividadData.estadisticas.pendientes}</p>
+                        <p className="text-xs text-amber-500 dark:text-amber-300 mt-1">Pendientes</p>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-800/30">
+                        <p className={`text-sm font-bold ${getConexionColor(actividadData.usuario.ultimo_acceso)}`}>
+                          {formatUltimoAcceso(actividadData.usuario.ultimo_acceso)}
+                        </p>
+                        <p className="text-xs text-purple-500 dark:text-purple-300 mt-1">Última Conexión</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {actividadData.pedimentos_recientes.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-100 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
-                          onClick={() => { setIsActividadOpen(false); router.push(`/pedimentos/${p.id}`); }}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <p className="font-mono font-bold text-gray-900 dark:text-white text-sm">{p.pedimento}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.cliente_empresa || "Sin cliente"}</p>
+
+                    {/* Historial de Pedimentos */}
+                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <FaHistory className="text-blue-500" /> Pedimentos Recientes
+                    </h3>
+                    
+                    {actividadData.pedimentos_recientes.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <FaFileAlt className="text-4xl mx-auto mb-3 opacity-30" />
+                        <p>Este usuario no tiene pedimentos registrados.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {actividadData.pedimentos_recientes.map((p) => (
+                          <div
+                            key={p.id}
+                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl border border-gray-100 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+                            onClick={() => { setIsActividadOpen(false); router.push(`/pedimentos/${p.id}`); }}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div>
+                                <p className="font-mono font-bold text-gray-900 dark:text-white text-sm">{p.pedimento}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.cliente_empresa || "Sin cliente"}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORS[p.estado] || ESTADO_COLORS.PENDIENTE}`}>
+                                {p.estado}
+                              </span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                {p.fecha_recepcion ? new Date(p.fecha_recepcion).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : "—"}
+                              </span>
+                              <FaEye className="text-blue-400 text-xs" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORS[p.estado] || ESTADO_COLORS.PENDIENTE}`}>
-                              {p.estado}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {p.fecha_recepcion ? new Date(p.fecha_recepcion).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : "—"}
-                            </span>
-                            <FaEye className="text-blue-400 text-xs" />
-                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12 text-red-500">
+                    <p>Error al cargar la actividad del usuario.</p>
+                  </div>
+                )
+              )}
+
+              {/* C17: Bitácora de sesiones */}
+              {actividadTab === "bitacora" && (
+                <div>
+                  {/* Filtros de rango */}
+                  <div className="flex gap-2 mb-5">
+                    {["dia","semana","mes"].map(r => (
+                      <button
+                        key={r}
+                        onClick={() => handleBitacoraRangoChange(r)}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          bitacoraRango === r
+                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200"
+                            : "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600"
+                        }`}
+                      >
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+
+                  {bitacoraLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <FaSpinner className="animate-spin text-3xl text-purple-500" />
+                    </div>
+                  ) : bitacoraData ? (
+                    <>
+                      {/* Resumen */}
+                      <div className="grid grid-cols-2 gap-4 mb-5">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800/30">
+                          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{bitacoraData.total_horas_periodo}h</p>
+                          <p className="text-xs text-purple-500 mt-1">Horas totales ({bitacoraRango})</p>
                         </div>
-                      ))}
+                        <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-4 border border-gray-100 dark:border-slate-600">
+                          <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{bitacoraData.total_sesiones}</p>
+                          <p className="text-xs text-gray-500 mt-1">Sesiones totales</p>
+                        </div>
+                      </div>
+
+                      {/* Días */}
+                      <div className="space-y-3">
+                        {(bitacoraData.dias || []).length === 0 ? (
+                          <div className="text-center py-10 text-gray-400">
+                            <FaClock className="text-3xl mx-auto mb-2 opacity-40" />
+                            <p>No hay sesiones registradas en este período.</p>
+                          </div>
+                        ) : (
+                          bitacoraData.dias.map((dia, idx) => (
+                            <div key={idx} className={`rounded-xl border p-4 ${
+                              dia.semaforo === "VERDE"
+                                ? "border-green-200 dark:border-green-800/40 bg-green-50/50 dark:bg-green-900/10"
+                                : "border-red-200 dark:border-red-800/40 bg-red-50/50 dark:bg-red-900/10"
+                            }`}>
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3 h-3 rounded-full ${
+                                    dia.semaforo === "VERDE" ? "bg-green-500" : "bg-red-500"
+                                  } animate-pulse`} />
+                                  <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
+                                    {new Date(dia.fecha + "T12:00:00").toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}
+                                  </span>
+                                </div>
+                                <span className={`text-sm font-bold ${
+                                  dia.semaforo === "VERDE" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                }`}>
+                                  {dia.total_horas}h / 8h requeridas
+                                </span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {dia.sesiones.map((ses, si) => (
+                                  <div key={si} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 bg-white/70 dark:bg-slate-800/70 rounded-lg px-3 py-1.5">
+                                    <span>
+                                      {ses.inicio ? new Date(ses.inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : "?"}
+                                      {" → "}
+                                      {ses.fin ? new Date(ses.fin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : "Activa"}
+                                    </span>
+                                    <span className={`font-semibold ${
+                                      ses.estado === "ACTIVO" ? "text-green-500" : "text-gray-500"
+                                    }`}>
+                                      {ses.horas_activas}h • {ses.estado}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-12 text-gray-400">
+                      <FaClock className="text-3xl mx-auto mb-2 opacity-40" />
+                      <p>No se pudo cargar la bitácora de sesiones.</p>
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="text-center py-12 text-red-500">
-                  <p>Error al cargar la actividad del usuario.</p>
                 </div>
               )}
             </div>

@@ -78,7 +78,7 @@ export default function CargaArchivos() {
   const [batchStatus, setBatchStatus] = useState(null);
   const [showZipWarningModal, setShowZipWarningModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("Carga Masiva");
+  const [activeTab, setActiveTab] = useState("Nueva Carga");
   const [historial, setHistorial] = useState([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   const fileInputRef = useRef(null);
@@ -86,6 +86,31 @@ export default function CargaArchivos() {
   const pollingRef = useRef(null);
   const { isAdmin, isOperador, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Fetch historial
+  const fetchHistorial = useCallback(async () => {
+    setLoadingHistorial(true);
+    try {
+      // Usaremos el mismo endpoint de cargas masivas lote/archivos si existe
+      // O un endpoint nuevo. Si no existe, usamos pedimentos o historial_cargas
+      const res = await api.get("/pedimentos?size=50"); 
+      // OJO: Asumimos que los pedimentos devueltos o un endpoint de historial nos sirve.
+      // Para mostrar "quién hizo la carga, hora, ip, operador etc", quizás debamos pedir las bitácoras.
+      // Vamos a usar un endpoint que liste las extracciones recientes.
+      const res_archivos = await api.get("/dashboard/archivos-recientes"); 
+      setHistorial(res_archivos.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "Historial") {
+      fetchHistorial();
+    }
+  }, [activeTab, fetchHistorial]);
 
   useEffect(() => {
     if (!authLoading && !isAdmin && !isOperador) {
@@ -324,13 +349,37 @@ export default function CargaArchivos() {
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li><strong>PDF:</strong> Pedimentos simples (IA los extraerá).</li>
               <li><strong>ZIP:</strong> Para carga masiva (descompresión automática).</li>
+              <li><strong>M3:</strong> Archivos de Data Stage (`m3*.205`, `.csv`, etc).</li>
             </ul>
-            <p className="mt-2 text-xs text-yellow-500">
-              Nota: La carga de Glosas y archivos M3 se ha movido al módulo de Conciliación SAT.
-            </p>
           </InfoModal>
         </div>
       </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 border-b border-gray-200 dark:border-slate-700">
+        <button
+          onClick={() => setActiveTab("Nueva Carga")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "Nueva Carga"
+              ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          Nueva Carga
+        </button>
+        <button
+          onClick={() => setActiveTab("Historial")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "Historial"
+              ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          Historial de Cargas
+        </button>
+      </div>
+
+      {activeTab === "Nueva Carga" && (
+        <>
 
       {/* ─── Drop Zone ──────────────────────────────── */}
       <div
@@ -753,6 +802,72 @@ export default function CargaArchivos() {
                 Sí, continuar subida
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {activeTab === "Historial" && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Historial de Cargas</h2>
+          </div>
+          <div className="overflow-x-auto min-h-[400px]">
+            {loadingHistorial ? (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <FaSpinner className="animate-spin text-4xl mb-4 text-blue-500" />
+                <p>Cargando historial...</p>
+              </div>
+            ) : historial.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <FaSearch className="text-4xl mb-4 opacity-30" />
+                <p>No se encontraron cargas recientes.</p>
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-700">
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha / Hora</th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pedimento</th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Operador</th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+                  {historial.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                        {item.created_at ? new Date(item.created_at).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                      </td>
+                      <td className="p-4">
+                        <div className="font-mono font-bold text-gray-900 dark:text-white text-sm">{item.pedimento || item.nombre_original || "Desconocido"}</div>
+                      </td>
+                      <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                        {item.usuario?.nombre || "—"}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                          {item.estado || "COMPLETADO"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        {item.id && (
+                          <button
+                            onClick={() => router.push(item.pedimento ? `/pedimentos/${item.id}` : '#')}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                            title="Ver Detalles"
+                          >
+                            <FaEye size={18} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}

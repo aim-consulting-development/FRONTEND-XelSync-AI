@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import { useAuth } from "@/lib/useAuth";
 import api from "@/lib/api";
-import { FaCheck, FaTimes, FaSpinner, FaBoxOpen } from "react-icons/fa";
+import { FaCheck, FaTimes, FaSpinner, FaBoxOpen, FaPaperPlane } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 
 export default function CatalogosPendientes() {
+  const { isOperador, isAdmin } = useAuth();
   const [pendientes, setPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +46,15 @@ export default function CatalogosPendientes() {
       fetchPendientes();
     } catch (error) {
       toast.error("Error al rechazar catálogo");
+    }
+  };
+
+  const handleSolicitarAprobacion = async (id) => {
+    try {
+      await api.post(`/catalogos-pendientes/${id}/solicitar-aprobacion`);
+      toast.success("Solicitud enviada al administrador.");
+    } catch (error) {
+      toast.error("Error al solicitar aprobación");
     }
   };
 
@@ -99,20 +110,33 @@ export default function CatalogosPendientes() {
                         {item.descripcion_extraida}
                       </td>
                       <td className="px-4 py-3 flex justify-end gap-2">
-                        <button
-                          onClick={() => handleAprobar(item.id)}
-                          title="Aprobar"
-                          className="flex items-center justify-center p-2 rounded-md bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition-colors"
-                        >
-                          <FaCheck />
-                        </button>
-                        <button
-                          onClick={() => handleRechazar(item.id)}
-                          title="Rechazar"
-                          className="flex items-center justify-center p-2 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                          <FaTimes />
-                        </button>
+                        {isAdmin ? (
+                          <>
+                            <button
+                              onClick={() => handleAprobar(item.id)}
+                              title="Aprobar"
+                              className="flex items-center justify-center p-2 rounded-md bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition-colors"
+                            >
+                              <FaCheck />
+                            </button>
+                            <button
+                              onClick={() => handleRechazar(item.id)}
+                              title="Rechazar"
+                              className="flex items-center justify-center p-2 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              <FaTimes />
+                            </button>
+                          </>
+                        ) : isOperador ? (
+                          <button
+                            onClick={() => handleSolicitarAprobacion(item.id)}
+                            title="Solicitar Aprobación"
+                            className="flex items-center justify-center gap-2 p-2 rounded-md bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-colors"
+                          >
+                            <FaPaperPlane />
+                            <span className="text-xs">Solicitar</span>
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}

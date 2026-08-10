@@ -16,6 +16,7 @@ import {
   FaInfoCircle,
   FaSpinner,
   FaCog,
+  FaClock,
 } from "react-icons/fa";
 import Image from "next/image";
 import api from "@/lib/api";
@@ -41,6 +42,15 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
+
+  // C13: Contador de catálogos pendientes en cuarentena
+  const [catalogosPendientes, setCatalogosPendientes] = useState(0);
+  const [catalogosToast, setCatalogosToast] = useState(false);
+
+  // Bitacora Sesion
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState("08:00:00");
+  const [isSessionExceeded, setIsSessionExceeded] = useState(false);
 
   const searchRef = useRef(null);
   const notificationRef = useRef(null);
@@ -76,9 +86,76 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000); // cada 60 segundos
+    const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
+
+  // C13: Polling de catálogos pendientes (cuarentena)
+  const fetchCatalogosPendientes = useCallback(async () => {
+    try {
+      const res = await api.get("/catalogos-pendientes/count");
+      const newCount = res.data.count || 0;
+      if (newCount > catalogosPendientes && catalogosPendientes > 0) {
+        // Hay nuevos catálogos en cuarentena — mostrar toast brevemente
+        setCatalogosToast(true);
+        setTimeout(() => setCatalogosToast(false), 5000);
+      }
+      setCatalogosPendientes(newCount);
+    } catch {
+      // silencioso
+    }
+  }, [catalogosPendientes]);
+
+  useEffect(() => {
+    fetchCatalogosPendientes();
+    const interval = setInterval(fetchCatalogosPendientes, 60000);
+    return () => clearInterval(interval);
+  }, [fetchCatalogosPendientes]);
+
+  // Cargar inicio de sesión para Bitácora
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await api.get("/dashboard/bitacora/mi-sesion");
+        if (res.data.inicio_sesion) {
+          setSessionStartTime(new Date(res.data.inicio_sesion));
+        }
+      } catch (e) {
+        // silencioso
+      }
+    };
+    if (user?.rol === "OPERADOR") {
+      fetchSession();
+    }
+  }, [user]);
+
+  // Actualizar Timer
+  useEffect(() => {
+    if (!sessionStartTime) return;
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const diffMs = now - sessionStartTime;
+      const eightHoursMs = 8 * 60 * 60 * 1000;
+      
+      const remainingMs = eightHoursMs - diffMs;
+      
+      if (remainingMs <= 0) {
+        setTimeRemaining("00:00:00");
+        setIsSessionExceeded(true);
+      } else {
+        setIsSessionExceeded(false);
+        const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+        const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((remainingMs % (1000 * 60)) / 1000);
+        setTimeRemaining(`${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+      }
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
 
   // Cargar notificaciones al abrir panel
   const loadNotifications = useCallback(async () => {
@@ -166,7 +243,12 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+      // Ignorar errores al cerrar sesión
+    }
     localStorage.clear();
     window.location.href = "/login";
   };
@@ -184,6 +266,24 @@ export default function Navbar() {
 
   return (
     <header className="h-16 bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-6 relative transition-colors duration-300">
+      {/* C13: Toast de nuevos catálogos en cuarentena */}
+      {catalogosToast && (
+        <div className="fixed top-20 right-6 z-[9999] flex items-center gap-3 bg-amber-50 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 rounded-xl shadow-xl px-4 py-3 animate-in slide-in-from-right">
+          <div className="flex-shrink-0 w-8 h-8 bg-amber-100 dark:bg-amber-800/60 rounded-full flex items-center justify-center">
+            <FaCog className="text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nuevos catálogos pendientes</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {catalogosPendientes} registro(s) en cuarentena requieren revisión
+            </p>
+          </div>
+          <Link href="/catalogos-pendientes" className="text-xs text-amber-700 dark:text-amber-300 underline whitespace-nowrap hover:no-underline">
+            Revisar
+          </Link>
+        </div>
+      )}
+
       {/* Logo */}
       <Image
         src="/images/XelSyncLogo1.png"
@@ -195,6 +295,21 @@ export default function Navbar() {
       />
 
       <div className="flex items-center gap-4">
+        {/* BITACORA TIMER (Solo Operador) */}
+        {user?.rol === "OPERADOR" && sessionStartTime && (
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-sm font-mono text-sm tracking-widest transition-colors ${
+              isSessionExceeded
+                ? "bg-red-500/10 border-red-500/30 text-red-500"
+                : "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
+            }`}
+            title="Tiempo restante de SLA de 8 horas"
+          >
+            <FaClock className={isSessionExceeded ? "animate-pulse" : ""} />
+            {timeRemaining}
+          </div>
+        )}
+
         {/* BUSCADOR */}
         <div className="relative" ref={searchRef}>
           <div className="relative cursor-pointer" onClick={() => setShowSearch(true)}>
@@ -212,6 +327,21 @@ export default function Navbar() {
             </div>
           )}
         </div>
+
+        {/* C13: BADGE CATÁLOGOS PENDIENTES */}
+        {catalogosPendientes > 0 && (
+          <Link
+            href="/catalogos-pendientes"
+            title={`${catalogosPendientes} catálogos en cuarentena`}
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+          >
+            <FaCog className="text-amber-500" />
+            <span className="hidden sm:inline">Cuarentena</span>
+            <span className="min-w-[18px] h-[18px] bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+              {catalogosPendientes > 99 ? "99+" : catalogosPendientes}
+            </span>
+          </Link>
+        )}
 
         {/* NOTIFICACIONES */}
         <div className="relative" ref={notificationRef}>

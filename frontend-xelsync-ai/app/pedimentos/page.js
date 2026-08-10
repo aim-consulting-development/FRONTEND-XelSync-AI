@@ -243,6 +243,16 @@ export default function PedimentosPage() {
               {c.cliente_empresa}
             </button>
           ))}
+          <button
+            onClick={() => { setClienteFilter("PENDIENTE_CLIENTE"); setPage(1); }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              clienteFilter === "PENDIENTE_CLIENTE" 
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800" 
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+            }`}
+          >
+            ⚠️ Pendientes de Cliente
+          </button>
         </div>
       )}
 
@@ -357,7 +367,7 @@ export default function PedimentosPage() {
                         <div className="text-xs text-gray-500 mt-1">{item.referencia_interna || "Sin ref"}</div>
                       </td>
                       <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
-                        {item.cliente_empresa}
+                        {item.cliente_empresa || <span className="text-amber-500 text-xs font-semibold">Falta Cliente</span>}
                       </td>
                       <td className="p-4">
                         <span className="text-sm text-gray-700 dark:text-gray-300">

@@ -23,6 +23,18 @@ const ESTADO_COLORS = {
   RECHAZADO: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
+function isFechaFueraDeRango(item) {
+  const fechaStr = item?.fecha_despacho_agente || item?.fecha_recepcion_sistema;
+  if (!fechaStr) return false;
+  const fecha = new Date(fechaStr);
+  const ahora = new Date();
+  if (fecha.getFullYear() < ahora.getFullYear()) return true;
+  const diffMs = ahora - fecha;
+  const diffMeses = diffMs / (1000 * 60 * 60 * 24 * 30);
+  if (diffMeses > 4) return true;
+  return false;
+}
+
 const CustomPdfViewer = dynamic(() => import("@/components/pedimentos/CustomPdfViewer"), {
   ssr: false,
   loading: () => (
@@ -237,10 +249,16 @@ export default function PedimentoDetalle() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             Pedimento {pedimento.pedimento}
-            <div className="flex items-center gap-2">
-              <span className={`text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1.5 ${ESTADO_COLORS[pedimento.estado] || ESTADO_COLORS.PENDIENTE}`}>
+            <div className="flex items-center gap-3">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm border border-white/20 ${ESTADO_COLORS[pedimento.estado] || ESTADO_COLORS.PENDIENTE}`}>
                 {pedimento.estado === "PROCESADO" || pedimento.estado === "APROBADO" ? <FaCheckCircle /> : <FaExclamationCircle />} {pedimento.estado}
               </span>
+              {isFechaFueraDeRango(pedimento) && (
+                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse flex items-center gap-1">
+                  <FaClock />
+                  Fuera de Fecha
+                </span>
+              )}
               {pedimento.cruce_cove && pedimento.cruce_cove.xmls_encontrados === 0 && (
                 <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase tracking-wider border border-red-200 dark:border-red-800/50">
                   Sin COVE

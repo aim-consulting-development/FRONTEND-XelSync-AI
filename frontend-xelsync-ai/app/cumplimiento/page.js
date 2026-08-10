@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
+import { useAuth } from "@/lib/useAuth";
 import api from "@/lib/api";
 import {
   FaShieldAlt,
@@ -33,6 +34,9 @@ const ALERTA_COLORS = {
 };
 
 export default function CumplimientoPage() {
+  const { user, isAdmin, isOperador, loading: authLoading } = useAuth();
+  const [clientes, setClientes] = useState([]);
+  const [selectedCliente, setSelectedCliente] = useState("");
   const [resumen, setResumen] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [historial, setHistorial] = useState([]);
@@ -48,31 +52,34 @@ export default function CumplimientoPage() {
   const fetchResumen = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/obligaciones/resumen");
+      const url = selectedCliente ? `/obligaciones/resumen?cliente_empresa=${encodeURIComponent(selectedCliente)}` : "/obligaciones/resumen";
+      const res = await api.get(url);
       setResumen(res.data);
     } catch {
       setResumen(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedCliente]);
 
   const fetchAlertas = useCallback(async () => {
     setAlertasLoading(true);
     try {
-      const res = await api.get("/obligaciones/alertas");
+      const url = selectedCliente ? `/obligaciones/alertas?cliente_empresa=${encodeURIComponent(selectedCliente)}` : "/obligaciones/alertas";
+      const res = await api.get(url);
       setAlertas(res.data || []);
     } catch {
       setAlertas([]);
     } finally {
       setAlertasLoading(false);
     }
-  }, []);
+  }, [selectedCliente]);
 
   const fetchHistorial = useCallback(async () => {
     setHistorialLoading(true);
     try {
-      const res = await api.get(`/obligaciones/conciliaciones?page=${historialPage}&size=15`);
+      const url = selectedCliente ? `/obligaciones/conciliaciones?page=${historialPage}&size=15&cliente_empresa=${encodeURIComponent(selectedCliente)}` : `/obligaciones/conciliaciones?page=${historialPage}&size=15`;
+      const res = await api.get(url);
       setHistorial(res.data.items || []);
       setHistorialTotal(res.data.total || 0);
       setHistorialPages(res.data.pages || 1);
@@ -81,7 +88,21 @@ export default function CumplimientoPage() {
     } finally {
       setHistorialLoading(false);
     }
-  }, [historialPage]);
+  }, [historialPage, selectedCliente]);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (isAdmin) {
+        api.get("/usuarios/cartera/todos-los-clientes").then(res => {
+          setClientes(res.data.clientes || []);
+        });
+      } else {
+        api.get("/usuarios/mi-cartera").then(res => {
+          setClientes(res.data.empresas || []);
+        });
+      }
+    }
+  }, [authLoading, isAdmin]);
 
   useEffect(() => {
     fetchResumen();
@@ -115,35 +136,65 @@ export default function CumplimientoPage() {
 
   return (
     <MainLayout>
-      {/* Encabezado */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cumplimiento</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Monitoreo de obligaciones aduaneras y fiscales</p>
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <FaShieldAlt className="text-blue-500" />
+              Centro de Cumplimiento
+            </h1>
+            <InfoModal title="Centro de Cumplimiento Trade">
+              <p>Monitoreo proactivo de tu salud aduanera para evitar requerimientos del SAT o multas en auditorías de comercio exterior.</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li><strong>Anexo 24:</strong> Evalúa si los pedimentos cuentan con la data mínima (90%+) para tus descargos.</li>
+                <li><strong>Anexo 30:</strong> Mide la tasa de expedientes digitalmente procesados vs los recibidos.</li>
+                <li><strong>Conciliación SAT (Glosa):</strong> Detecta discrepancias de valor/IVA o pedimentos no registrados en Data Stage.</li>
+              </ul>
+            </InfoModal>
           </div>
-          <InfoModal title="Módulo de Cumplimiento (Trade Compliance)">
-            <p>
-              El <strong>Cumplimiento Aduanero (Trade Compliance)</strong> engloba la auditoría permanente del Expediente Electrónico de Comercio Exterior.
-            </p>
-            <p>
-              <strong>Impacto Aduanero:</strong> La falta del expediente digital completo (Pedimento, Factura Comercial, VUCEM, COVE, B/L) por cada operación puede derivar en multas severas por expediente incompleto y, en casos reiterados, en la suspensión en el Padrón de Importadores.
-            </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Monitorea el estatus de los <strong>Semáforos de Riesgo</strong> (Ej. plazos de permanencia de temporales).</li>
-              <li>Asegura la integración del E-Document para cada fracción arancelaria que lo requiera.</li>
-              <li>Prepara a la empresa para auditorías de <strong>Certificación IVA/IEPS</strong> u OEA.</li>
-            </ul>
-          </InfoModal>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              title="Refrescar datos"
+            >
+              <FaSync className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
-        >
-          <FaSync className={loading ? "animate-spin text-blue-500" : ""} />
-          Actualizar
-        </button>
-      </div>
+
+        {/* Pestañas por cliente */}
+        {clientes.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <button
+              onClick={() => setSelectedCliente("")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCliente === "" 
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              }`}
+            >
+              Todos los Clientes
+            </button>
+            {clientes.map(c => {
+              const nombre = c.nombre || c.cliente_empresa;
+              return (
+                <button
+                  key={nombre}
+                  onClick={() => setSelectedCliente(nombre)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedCliente === nombre
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                      : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {nombre}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
@@ -439,6 +490,7 @@ export default function CumplimientoPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </MainLayout>
   );

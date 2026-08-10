@@ -33,9 +33,13 @@ export default function ConciliacionPage() {
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
   const [operationType, setOperationType] = useState("todas");
+  const [clientes, setClientes] = useState([]);
+  const [selectedCliente, setSelectedCliente] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadedFileObj, setUploadedFileObj] = useState(null);
+  const [pedimentosList, setPedimentosList] = useState([]);
+  const [loadingPedimentos, setLoadingPedimentos] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
 
@@ -45,10 +49,37 @@ export default function ConciliacionPage() {
   const isStrictAuditor = user?.rol === "AUDITOR";
 
   useEffect(() => {
-    if (!authLoading && !isAdmin && !isOperador && !isStrictAuditor) {
+    if (user && !isAdmin && !isOperador && !isStrictAuditor) {
       router.push("/dashboard");
     }
+  }, [user, isAdmin, isOperador, isStrictAuditor, router]);
+
+  useEffect(() => {
+    if (!authLoading && (isAdmin || isOperador || isStrictAuditor)) {
+      // Fetch clientes
+      if (isAdmin) {
+        api.get("/usuarios/cartera/todos-los-clientes").then(res => {
+          setClientes(res.data.clientes || []);
+        });
+      } else {
+        api.get("/usuarios/mi-cartera").then(res => {
+          setClientes(res.data.empresas || []);
+        });
+      }
+    }
   }, [authLoading, isAdmin, isOperador, isStrictAuditor, router]);
+
+  useEffect(() => {
+    if (selectedCliente) {
+      setLoadingPedimentos(true);
+      api.get(`/pedimentos?cliente_empresa=${encodeURIComponent(selectedCliente)}&size=100`)
+        .then(res => setPedimentosList(res.data.items || []))
+        .catch(() => setPedimentosList([]))
+        .finally(() => setLoadingPedimentos(false));
+    } else {
+      setPedimentosList([]);
+    }
+  }, [selectedCliente, selectedPeriod]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -75,6 +106,9 @@ export default function ConciliacionPage() {
       const formData = new FormData();
       formData.append("archivo_sat", uploadedFileObj);
       formData.append("periodo", selectedPeriod);
+      if (selectedCliente) {
+        formData.append("cliente_empresa", selectedCliente);
+      }
       const res = await api.post("/conciliacion/ejecutar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -171,6 +205,38 @@ export default function ConciliacionPage() {
         </div>
       </div>
 
+      {/* Pestañas por cliente */}
+      {clientes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <button
+            onClick={() => setSelectedCliente("")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedCliente === "" 
+                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+            }`}
+          >
+            Todos los Clientes
+          </button>
+          {clientes.map(c => {
+            const nombre = c.nombre || c.cliente_empresa;
+            return (
+              <button
+                key={nombre}
+                onClick={() => setSelectedCliente(nombre)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCliente === nombre
+                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" 
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                }`}
+              >
+                {nombre}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {stats.map((stat, index) => (
@@ -226,6 +292,36 @@ export default function ConciliacionPage() {
                   <option value="importacion">Importación</option>
                   <option value="exportacion">Exportación</option>
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pedimentos del Cliente ({pedimentosList.length})</label>
+              <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-slate-600 rounded-lg p-2 bg-gray-50 dark:bg-slate-900/50 text-sm scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                {loadingPedimentos ? (
+                  <p className="text-gray-500 text-center py-4"><FaSpinner className="animate-spin inline mr-2"/>Cargando...</p>
+                ) : pedimentosList.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    {selectedCliente ? "No hay pedimentos registrados para este cliente." : "Selecciona un cliente para ver sus pedimentos."}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {pedimentosList.map(p => (
+                      <li key={p.id} className="p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 flex flex-col gap-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{p.numero_pedimento || "Sin Número"}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${p.tipo_operacion === 'IMPORTACION' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                            {p.tipo_operacion || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Clave: {p.clave_pedimento || "N/A"}</span>
+                          <span>{p.fecha_recepcion_sistema ? new Date(p.fecha_recepcion_sistema).toLocaleDateString() : ""}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
@@ -329,6 +425,62 @@ export default function ConciliacionPage() {
           </div>
         </div>
       </div>
+
+      {/* Lista de Pedimentos del Cliente */}
+      {selectedCliente && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <FaFileExcel className="text-blue-500" />
+              Pedimentos relacionados a {selectedCliente}
+            </h2>
+            <span className="text-sm font-medium px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+              {pedimentosList.length} registros
+            </span>
+          </div>
+          <div className="p-0">
+            {loadingPedimentos ? (
+              <div className="flex items-center justify-center p-8 text-gray-500">
+                <FaSpinner className="animate-spin text-2xl" />
+                <span className="ml-3">Cargando pedimentos...</span>
+              </div>
+            ) : pedimentosList.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                No se encontraron pedimentos para este cliente.
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-[400px]">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-slate-900 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3">Pedimento</th>
+                      <th className="px-6 py-3">Clave</th>
+                      <th className="px-6 py-3">Tipo</th>
+                      <th className="px-6 py-3">Fecha Recepción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                    {pedimentosList.map((p, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <td className="px-6 py-3 font-mono font-medium text-gray-900 dark:text-white">{p.pedimento}</td>
+                        <td className="px-6 py-3 text-gray-700 dark:text-gray-300">{p.cve_pedimento}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${p.tipo_operacion === 'IMP' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                            {p.tipo_operacion}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                          {p.fecha_recepcion_sistema ? new Date(p.fecha_recepcion_sistema).toLocaleDateString() : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Resultados de discrepancias */}
       {resultado && (
