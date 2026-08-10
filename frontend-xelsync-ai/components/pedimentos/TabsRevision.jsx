@@ -259,13 +259,13 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
             {partidas.map((p, idx) => (
               <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-800/30">
                 <td className="p-2 text-gray-400 text-xs">{idx + 1}</td>
-                {/* C4: Número de parte real del material (del proveedor), diferente al número de pedimento */}
+                {/* C4: Número de parte real del material (del proveedor) */}
                 <td className="p-2 font-mono text-indigo-700 dark:text-indigo-300 font-semibold text-xs">
-                  {p.numero_parte || p.AW_numero_parte || p.numero_parte_proveedor || 
+                  {p.AV_material || p.numero_parte || p.AW_numero_parte || p.numero_parte_proveedor || 
                    <span className="text-gray-300 dark:text-gray-600 italic">Sin Nº Parte</span>}
                 </td>
                 <td className="p-2 font-mono text-xs text-gray-700 dark:text-gray-300">
-                  {p.AV_material || p.AH_material || p.clave || "—"}
+                  {p.AH_material || p.clave || "—"}
                 </td>
                 <td className="p-2 text-xs max-w-[180px] truncate" title={p.descripcion || p.AX_descripcion || ""}>
                   {p.descripcion || p.AX_descripcion || "—"}
