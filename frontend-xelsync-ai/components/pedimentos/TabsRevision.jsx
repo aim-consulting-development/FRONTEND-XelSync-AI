@@ -61,14 +61,36 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
   const renderEncabezado = () => {
     if (!pedimentoData) return <p className="text-gray-500 p-4">No hay datos</p>;
     
-    const camposPrincipales = Object.keys(pedimentoData).filter(
+    // Extraer campos principales (a nivel raíz)
+    const rawKeys = Object.keys(pedimentoData).filter(
       k => !Array.isArray(pedimentoData[k]) && typeof pedimentoData[k] !== 'object'
-        && !["importador_rfc","importador_nombre","exportador_rfc","exportador_nombre","importador_curp","exportador_nombre"].includes(k)
+        && !["importador_rfc","importador_nombre","exportador_rfc","exportador_nombre","importador_curp"].includes(k)
     );
+    
+    // Extraer campos del encabezado anidado de M3
+    const encM3 = pedimentoData.encabezado_pedimento || {};
+    const encM3Expo = pedimentoData.encabezado_pedimento_expo || {};
+    
+    const combinedData = { ...pedimentoData };
+    
+    // Agregar las llaves anidadas al combinedData
+    Object.keys(encM3).forEach(k => {
+      if (!["importador_rfc","importador_nombre","exportador_rfc","exportador_nombre","importador_curp"].includes(k)) {
+        if (!combinedData[k]) combinedData[k] = encM3[k];
+        if (!rawKeys.includes(k)) rawKeys.push(k);
+      }
+    });
+    
+    Object.keys(encM3Expo).forEach(k => {
+      if (!["importador_rfc","importador_nombre","exportador_rfc","exportador_nombre","importador_curp"].includes(k)) {
+        if (!combinedData[k]) combinedData[k] = encM3Expo[k];
+        if (!rawKeys.includes(k)) rawKeys.push(k);
+      }
+    });
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 animate-in fade-in">
-        {camposPrincipales.map(key => renderInput(key, key.replace(/^[A-Z]+_/, '').replace(/_/g, ' '), pedimentoData[key]))}
+        {rawKeys.map(key => renderInput(key, key.replace(/^[A-Z]+_/, '').replace(/_/g, ' '), combinedData[key]))}
       </div>
     );
   };
