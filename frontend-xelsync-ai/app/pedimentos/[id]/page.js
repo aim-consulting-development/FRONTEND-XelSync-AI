@@ -294,16 +294,16 @@ export default function PedimentoDetalle() {
         
         {/* VISOR PDF (40%) */}
         <div className="w-full lg:w-[40%] flex flex-col h-full sticky top-[80px] min-w-0">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col flex-1 h-full min-h-0">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col flex-1 h-full min-h-0 min-w-0">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-4">
               <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <FaFileCode className="text-blue-500" /> Archivo Original
               </h2>
             </div>
             
-            <div className="flex-1 w-full bg-gray-100 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden relative min-h-[400px] flex items-center justify-center">
+            <div className="flex-1 w-full bg-gray-100 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden relative min-h-[400px] flex items-center justify-center min-w-0">
               {rawText ? (
-                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900">
+                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900 min-w-0">
                   <JsonTreeViewer data={rawText} />
                 </div>
               ) : pdfUrl ? (

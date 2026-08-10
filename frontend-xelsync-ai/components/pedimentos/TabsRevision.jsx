@@ -310,8 +310,8 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
     const partidas_expo = pedimentoData?.hoja_identificadores_partidas_expo || pedimentoData?.json_extraccion?.hoja_identificadores_partidas_expo || [];
     const identificadoresImpo = pedimentoData?.hoja_identificadores_impo || pedimentoData?.json_extraccion?.hoja_identificadores_impo || [];
     const identificadoresExpo = pedimentoData?.hoja_identificadores_expo || pedimentoData?.json_extraccion?.hoja_identificadores_expo || [];
-    const identificadoresLegacy = pedimentoData?.identificadores || pedimentoData?.json_extraccion?.identificadores || [];
-    const hayDatos = identificadoresImpo.length > 0 || identificadoresExpo.length > 0 || identificadoresLegacy.length > 0 || partidas_impo.length > 0 || partidas_expo.length > 0;
+    const legacy = pedimentoData?.identificadores || pedimentoData?.json_extraccion?.identificadores || [];
+    const hayDatos = identificadoresImpo.length > 0 || identificadoresExpo.length > 0 || legacy.length > 0 || partidas_impo.length > 0 || partidas_expo.length > 0;
 
     if (!hayDatos) {
       return (
