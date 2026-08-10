@@ -293,7 +293,7 @@ export default function PedimentoDetalle() {
       <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-160px)] min-h-[600px] mb-20">
         
         {/* VISOR PDF (40%) */}
-        <div className="w-full lg:w-[40%] flex flex-col h-full sticky top-[80px] min-w-0">
+        <div className="w-full lg:w-[40%] lg:max-w-[40%] flex flex-col h-full sticky top-[80px] min-w-0">
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 flex flex-col flex-1 h-full min-h-0 min-w-0">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-4">
               <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -303,7 +303,7 @@ export default function PedimentoDetalle() {
             
             <div className="flex-1 w-full bg-gray-100 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden relative min-h-[400px] flex items-center justify-center min-w-0">
               {rawText ? (
-                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900 min-w-0">
+                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900 min-w-0 max-w-full">
                   <JsonTreeViewer data={rawText} />
                 </div>
               ) : pdfUrl ? (
@@ -328,7 +328,7 @@ export default function PedimentoDetalle() {
         </div>
 
         {/* PANEL DE DATOS (60%) */}
-        <div className="w-full lg:w-[60%] flex flex-col h-full overflow-y-auto pr-2 pb-4 min-w-0">
+        <div className="w-full lg:w-[60%] lg:max-w-[60%] flex flex-col h-full overflow-y-auto pr-2 pb-4 min-w-0">
           
           {/* HEADER RESUMEN */}
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mb-6">
