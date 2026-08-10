@@ -121,7 +121,7 @@ export default function CargaArchivos() {
   // ─── Validación de archivos ───────────────────────────
   const validateFile = (file) => {
     const ext = "." + file.name.split(".").pop()?.toLowerCase();
-    const isM3 = file.name.toLowerCase().startsWith("m3");
+    const isM3 = file.name.toLowerCase().startsWith("m3") && ext !== ".err";
     if (!ALLOWED_EXTENSIONS.includes(ext) && !isM3) {
       return `Extensión "${ext}" no permitida`;
     }
