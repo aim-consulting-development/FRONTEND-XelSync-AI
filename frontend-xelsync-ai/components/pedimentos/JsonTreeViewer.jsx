@@ -107,8 +107,8 @@ export default function JsonTreeViewer({ data }) {
       if (lines.length > 0 && lines[0].includes('|')) {
         const maxCols = Math.max(...lines.map(l => l.split('|').length));
         return (
-          <div className="w-full h-full overflow-auto bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 shadow-inner min-w-0 max-w-full">
-            <table className="w-full text-xs text-left border-collapse font-mono whitespace-nowrap">
+          <div className="w-full max-w-full overflow-x-auto overflow-y-auto max-h-[60vh] bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 shadow-inner">
+            <table className="w-full min-w-max text-xs text-left border-collapse font-mono whitespace-nowrap">
               <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-slate-800">
                 <tr className="text-gray-600 dark:text-gray-300">
                   <th className="p-2 border-b border-r dark:border-slate-700 w-10 text-center font-bold">#</th>

@@ -7,6 +7,7 @@ import InfoModal from "@/components/shared/InfoModal";
 import ConfirmModal from "@/components/shared/ConfirmModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaSearch,
   FaFilter,
@@ -67,6 +68,7 @@ function isFechaFueraDeRango(item) {
 export default function PedimentosPage() {
   const router = useRouter();
   const { canWrite, isAdmin } = useAuth();
+  const { confirm, alert } = useModal();
   
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,10 +88,6 @@ export default function PedimentosPage() {
 
   const [operadores, setOperadores] = useState([]);
   const [clientes, setClientes] = useState([]);
-
-  // Modal states
-  const [confirmDeleteModal, setConfirmDeleteModal] = useState({ isOpen: false });
-  const [confirmExportModal, setConfirmExportModal] = useState({ isOpen: false });
 
   // ─── Selección para InterXel masivo y Borrado ───
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -178,26 +176,25 @@ export default function PedimentosPage() {
     }
   };
 
-  const confirmExportLote = () => {
+  const handleExportLote = async () => {
     if (selectedIds.size === 0) return;
-    setConfirmExportModal({
-      isOpen: true,
+    
+    const result = await confirm(`¿Estás seguro de que deseas generar el archivo InterXel consolidado para los ${selectedIds.size} pedimentos seleccionados?`, {
       title: "Generar InterXel Masivo",
-      message: `¿Estás seguro de que deseas generar el InterXel para ${selectedIds.size} pedimento(s) seleccionado(s)?`,
-      confirmText: "Generar InterXel",
+      confirmText: "Generar Lote",
       showCheckbox: true,
-      checkboxLabel: "Mover pedimento(s) al historial después de generar",
+      checkboxLabel: "Archivar pedimentos después de procesar",
       initialCheckboxState: true,
       isDestructive: false,
     });
-  };
 
-  const handleExportLote = async (archivar) => {
+    if (result === null) return; // Cancelado
+
     setExportingLote(true);
     try {
       const res = await api.post("/pedimentos/interxel/lote", {
         pedimento_ids: [...selectedIds],
-        archivar: archivar
+        archivar: result
       }, { responseType: "blob" });
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -210,39 +207,34 @@ export default function PedimentosPage() {
       window.URL.revokeObjectURL(url);
 
       setSelectedIds(new Set());
-      setConfirmExportModal({ isOpen: false });
       fetchPedimentos();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.detail || "Error al generar InterXel masivo");
+      alert(err.response?.data?.detail || "Error al generar InterXel masivo", { title: "Error" });
     } finally {
       setExportingLote(false);
     }
   };
 
-  const confirmDeleteLote = () => {
+  const handleDeleteLote = async () => {
     if (selectedIds.size === 0) return;
-    setConfirmDeleteModal({
-      isOpen: true,
+    const isConfirmed = await confirm(`¿Estás seguro de que deseas eliminar ${selectedIds.size} pedimento(s)? Esta acción los ocultará del sistema.`, {
       title: "Borrar pedimentos",
-      message: `¿Estás seguro de que deseas eliminar ${selectedIds.size} pedimento(s)? Esta acción los ocultará del sistema.`,
       confirmText: "Borrar",
       isDestructive: true,
     });
-  };
+    if (!isConfirmed) return;
 
-  const handleDeleteLote = async () => {
     setDeletingLote(true);
     try {
       await api.delete("/pedimentos/lote", {
         data: { pedimento_ids: [...selectedIds] }
       });
       setSelectedIds(new Set());
-      setConfirmDeleteModal({ isOpen: false });
       fetchPedimentos();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.detail || "Error al eliminar pedimentos");
+      await alert(err.response?.data?.detail || "Error al eliminar pedimentos", { title: "Error" });
     } finally {
       setDeletingLote(false);
     }
@@ -266,7 +258,7 @@ export default function PedimentosPage() {
         {selectedIds.size > 0 && (
           <div className="flex gap-2">
             <button
-              onClick={confirmDeleteLote}
+              onClick={handleDeleteLote}
               disabled={deletingLote}
               className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-xl transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
               title="Borrar seleccionados"
@@ -275,7 +267,7 @@ export default function PedimentosPage() {
               Borrar ({selectedIds.size})
             </button>
             <button
-              onClick={confirmExportLote}
+              onClick={handleExportLote}
               disabled={exportingLote}
               className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
             >
@@ -554,29 +546,6 @@ export default function PedimentosPage() {
           </div>
         )}
       </div>
-
-      <ConfirmModal 
-        isOpen={confirmDeleteModal.isOpen}
-        onClose={() => setConfirmDeleteModal({ isOpen: false })}
-        onConfirm={handleDeleteLote}
-        title={confirmDeleteModal.title}
-        message={confirmDeleteModal.message}
-        confirmText={confirmDeleteModal.confirmText}
-        isDestructive={confirmDeleteModal.isDestructive}
-      />
-
-      <ConfirmModal 
-        isOpen={confirmExportModal.isOpen}
-        onClose={() => setConfirmExportModal({ isOpen: false })}
-        onConfirm={(archivar) => handleExportLote(archivar)}
-        title={confirmExportModal.title}
-        message={confirmExportModal.message}
-        confirmText={confirmExportModal.confirmText}
-        isDestructive={confirmExportModal.isDestructive}
-        showCheckbox={confirmExportModal.showCheckbox}
-        checkboxLabel={confirmExportModal.checkboxLabel}
-        initialCheckboxState={confirmExportModal.initialCheckboxState}
-      />
     </MainLayout>
   );
 }

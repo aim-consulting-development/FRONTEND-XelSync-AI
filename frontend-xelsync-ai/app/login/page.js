@@ -10,11 +10,13 @@ FaEye,
 FaEyeSlash,
 } from "react-icons/fa";
 import Image from "next/image";
+import { useModal } from "@/components/providers/ModalProvider";
 
 import api from "@/lib/api";
 
 export default function LoginPage() {
 const router = useRouter();
+const { alert } = useModal();
 
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -25,12 +27,12 @@ const handleSubmit = async (e) => {
 e.preventDefault();
 
 if (!email.trim()) {
-  alert("Ingresa tu correo electrónico");
+  await alert("Ingresa tu correo electrónico");
   return;
 }
 
 if (!password.trim()) {
-  alert("Ingresa tu contraseña");
+  await alert("Ingresa tu contraseña");
   return;
 }
 
@@ -55,7 +57,7 @@ try {
   console.error(error);
   // Intentar extraer el mensaje del backend si existe
   const msg = error.response?.data?.detail || "Error al iniciar sesión. Revisa tus credenciales.";
-  alert(msg);
+  await alert(msg);
 } finally {
   setLoading(false);
 }

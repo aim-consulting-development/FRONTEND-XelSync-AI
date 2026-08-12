@@ -5,6 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaSearch,
   FaPlus,
@@ -57,6 +58,7 @@ const TABS = Object.keys(TAB_CONFIG);
 
 export default function CatalogosPage() {
   const { canWrite } = useAuth();
+  const { confirm, alert } = useModal();
   const [activeTab, setActiveTab] = useState("Materiales");
   const [items, setItems] = useState([]);
   const [totales, setTotales] = useState({ Materiales: 0, Proveedores: 0, Clientes: 0, Fracciones: 0 });
@@ -158,14 +160,15 @@ export default function CatalogosPage() {
   };
 
   const handleDelete = async (item) => {
-    if (!confirm(`¿Eliminar "${item.clave || item.nombre}"? Esta acción no se puede deshacer.`)) return;
+    const isConfirmed = await confirm(`¿Eliminar "${item.clave || item.nombre}"? Esta acción no se puede deshacer.`, { isDestructive: true });
+    if (!isConfirmed) return;
     try {
       await api.delete(`${config.endpoint}/${item.id}`);
       fetchData();
       // Actualizar total
       setTotales((prev) => ({ ...prev, [activeTab]: Math.max(0, (prev[activeTab] || 1) - 1) }));
     } catch (err) {
-      alert(err.response?.data?.detail || "Error al eliminar el registro.");
+      await alert(err.response?.data?.detail || "Error al eliminar el registro.");
     }
   };
 
@@ -182,7 +185,7 @@ export default function CatalogosPage() {
       setShowModal(false);
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.detail || "Error al guardar el registro.");
+      await alert(err.response?.data?.detail || "Error al guardar el registro.");
     } finally {
       setFormLoading(false);
     }
@@ -197,7 +200,7 @@ export default function CatalogosPage() {
     // formData.append('file', uploadFile);
     // await api.post(`${config.endpoint}/upload`, formData);
     
-    alert(`Archivo "${uploadFile.name}" preparado para procesar en el catálogo de ${activeTab}. (Funcionalidad simulada para la demo)`);
+    await alert(`Archivo "${uploadFile.name}" preparado para procesar en el catálogo de ${activeTab}. (Funcionalidad simulada para la demo)`);
     setShowUploadModal(false);
     setUploadFile(null);
   };

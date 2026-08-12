@@ -5,6 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaSearch,
   FaFilter,
@@ -18,6 +19,7 @@ import {
 
 export default function IdentificadoresPage() {
   const { canWrite } = useAuth();
+  const { confirm, alert } = useModal();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -63,12 +65,13 @@ export default function IdentificadoresPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Está seguro de eliminar este identificador?")) return;
+    const isConfirmed = await confirm("¿Está seguro de eliminar este identificador?", { isDestructive: true });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/identificadores/${id}`);
       fetchIdentificadores();
     } catch (error) {
-      alert("Error al eliminar el identificador.");
+      await alert("Error al eliminar el identificador.");
     }
   };
 

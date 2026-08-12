@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaUserPlus,
   FaSearch,
@@ -37,6 +38,7 @@ const ESTADO_COLORS = {
 };
 
 export default function Usuarios() {
+  const { confirm, alert } = useModal();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -180,13 +182,15 @@ export default function Usuarios() {
       setCartera(res.data.items || []);
     } catch (error) {
       console.error("Error agregando a cartera:", error);
-      alert(error.response?.data?.detail || "Error al agregar cliente a cartera");
+      await alert(error.response?.data?.detail || "Error al agregar cliente a cartera");
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleRemoveCartera = async (carteraId) => {
+    const isConfirmed = await confirm("¿Estás seguro de quitar este cliente de la cartera?", { isDestructive: true });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/usuarios/${selectedUser.id}/cartera/${carteraId}`);
       setCartera(cartera.filter((c) => c.id !== carteraId));
@@ -201,18 +205,19 @@ export default function Usuarios() {
       fetchUsuarios();
     } catch (error) {
       console.error("Error cambiando estado:", error);
-      alert(error.response?.data?.detail || "Error cambiando estado");
+      await alert(error.response?.data?.detail || "Error cambiando estado");
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar este usuario permanentemente?")) return;
+    const isConfirmed = await confirm("¿Estás seguro de que deseas eliminar este usuario permanentemente?", { isDestructive: true });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/usuarios/${userId}`);
       fetchUsuarios();
     } catch (error) {
       console.error("Error eliminando usuario:", error);
-      alert(error.response?.data?.detail || "Error eliminando usuario");
+      await alert(error.response?.data?.detail || "Error eliminando usuario");
     }
   };
 

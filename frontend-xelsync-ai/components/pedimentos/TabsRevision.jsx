@@ -239,10 +239,10 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
     if (partidas.length === 0) return <p className="text-gray-500 p-4">No se detectaron partidas.</p>;
 
     return (
-      <div className="p-4 overflow-x-auto animate-in fade-in">
-        <table className="w-full text-left border-collapse min-w-[900px]">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-700 text-xs uppercase text-gray-500">
+      <div className="p-4 max-h-[60vh] overflow-y-auto overflow-x-auto animate-in fade-in">
+        <table className="w-full text-left border-collapse min-w-[900px] relative">
+          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-slate-800">
+            <tr className="border-b border-gray-200 dark:border-slate-700 text-xs uppercase text-gray-500">
               <th className="p-2">#</th>
               {/* C4: Número de Parte del Material — columna prominente */}
               <th className="p-2 text-indigo-600 dark:text-indigo-400">Nº de Parte</th>

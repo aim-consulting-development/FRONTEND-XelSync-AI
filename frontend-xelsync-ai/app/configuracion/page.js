@@ -5,6 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaUser,
   FaBell,
@@ -39,6 +40,7 @@ function Alert({ type, message, onClose }) {
 
 export default function Configuracion() {
   const { user, refreshProfile, isAdmin } = useAuth();
+  const { alert } = useModal();
   const [activeTab, setActiveTab] = useState("perfil");
   const [darkMode, setDarkMode] = useState(false);
 
@@ -162,7 +164,7 @@ export default function Configuracion() {
       setSysMsg("Configuración guardada.");
       setTimeout(() => setSysMsg(null), 3000);
     } catch (err) {
-      alert(err.response?.data?.detail || "Error al guardar.");
+      await alert(err.response?.data?.detail || "Error al guardar.");
     }
   };
 

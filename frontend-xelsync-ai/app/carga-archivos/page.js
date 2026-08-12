@@ -4,8 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
-import InfoModal from "@/components/shared/InfoModal";
 import api from "@/lib/api";
+import { useModal } from "@/components/providers/ModalProvider";
 import {
   FaCloudUploadAlt,
   FaFilePdf,
@@ -70,6 +70,9 @@ function getStatusBadge(estado) {
 
 // ─── Componente Principal ───────────────────────────────
 export default function CargaArchivos() {
+  const router = useRouter();
+  const { isAdmin, isOperador, loading: authLoading } = useAuth();
+  const { alert } = useModal();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -84,19 +87,12 @@ export default function CargaArchivos() {
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
   const pollingRef = useRef(null);
-  const { isAdmin, isOperador, loading: authLoading } = useAuth();
-  const router = useRouter();
 
   // Fetch historial
   const fetchHistorial = useCallback(async () => {
     setLoadingHistorial(true);
     try {
-      // Usaremos el mismo endpoint de cargas masivas lote/archivos si existe
-      // O un endpoint nuevo. Si no existe, usamos pedimentos o historial_cargas
       const res = await api.get("/pedimentos?size=50"); 
-      // OJO: Asumimos que los pedimentos devueltos o un endpoint de historial nos sirve.
-      // Para mostrar "quién hizo la carga, hora, ip, operador etc", quizás debamos pedir las bitácoras.
-      // Vamos a usar un endpoint que liste las extracciones recientes.
       const res_archivos = await api.get("/dashboard/archivos-recientes"); 
       setHistorial(res_archivos.data || []);
     } catch (err) {
@@ -213,7 +209,7 @@ export default function CargaArchivos() {
       const errorMessage = Array.isArray(dataDetail) 
         ? dataDetail.map(d => `${d.loc ? d.loc[d.loc.length-1] + ': ' : ''}${d.msg}`).join(' | ')
         : dataDetail || "Error al subir los archivos";
-      alert(errorMessage);
+      await alert(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -258,10 +254,8 @@ export default function CargaArchivos() {
   useEffect(() => {
     try {
       const savedBatchId = localStorage.getItem("xelsync_current_batch_id");
-      console.log("CargaArchivos montado. Buscando batchId local:", savedBatchId);
       
       if (savedBatchId) {
-        console.log("Restaurando batch:", savedBatchId);
         setBatchId(savedBatchId);
         startPolling(savedBatchId);
       }
@@ -270,7 +264,6 @@ export default function CargaArchivos() {
     }
 
     return () => {
-      console.log("CargaArchivos desmontado. Limpiando polling.");
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [batchId]);
@@ -280,8 +273,8 @@ export default function CargaArchivos() {
       await api.post(`/cargas-masivas/archivo/${archivoId}/cancelar`);
       setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "CANCELADO" } : f));
     } catch (err) {
-      console.error("Error al cancelar", err);
-      alert(err.response?.data?.detail || "No se pudo cancelar la extracción");
+      console.error(err);
+      await alert(err.response?.data?.detail || "No se pudo cancelar la extracción");
     }
   };
 
@@ -290,8 +283,8 @@ export default function CargaArchivos() {
       await api.post(`/cargas-masivas/archivo/${archivoId}/pausar`);
       setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "PAUSADO" } : f));
     } catch (err) {
-      console.error("Error al pausar", err);
-      alert(err.response?.data?.detail || "No se pudo pausar la extracción");
+      console.error(err);
+      await alert(err.response?.data?.detail || "No se pudo pausar la extracción");
     }
   };
 
@@ -300,8 +293,8 @@ export default function CargaArchivos() {
       await api.post(`/cargas-masivas/archivo/${archivoId}/reanudar`);
       setUploadedFiles(prev => prev.map(f => f.id === archivoId ? { ...f, estado: "EN_PROCESO" } : f));
     } catch (err) {
-      console.error("Error al reanudar", err);
-      alert(err.response?.data?.detail || "No se pudo reanudar la extracción");
+      console.error(err);
+      await alert(err.response?.data?.detail || "No se pudo reanudar la extracción");
     }
   };
 

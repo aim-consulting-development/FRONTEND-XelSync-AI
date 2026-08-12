@@ -309,13 +309,13 @@ export default function ConciliacionPage() {
                     {pedimentosList.map(p => (
                       <li key={p.id} className="p-2 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 flex flex-col gap-1">
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-900 dark:text-gray-100">{p.numero_pedimento || "Sin Número"}</span>
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{p.pedimento || "Sin Número"}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${p.tipo_operacion === 'IMPORTACION' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
                             {p.tipo_operacion || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs text-gray-500">
-                          <span>Clave: {p.clave_pedimento || "N/A"}</span>
+                          <span>Tipo: {p.tipo_pedimento || "N/A"}</span>
                           <span>{p.fecha_recepcion_sistema ? new Date(p.fecha_recepcion_sistema).toLocaleDateString() : ""}</span>
                         </div>
                       </li>

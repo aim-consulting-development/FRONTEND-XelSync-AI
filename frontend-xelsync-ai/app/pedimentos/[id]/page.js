@@ -10,9 +10,9 @@ import TabsRevision from "@/components/pedimentos/TabsRevision";
 import JsonTreeViewer from "@/components/pedimentos/JsonTreeViewer";
 import CoveCompliancePanel from "@/components/pedimentos/CoveCompliancePanel";
 import GlosaCompliancePanel from "@/components/pedimentos/GlosaCompliancePanel";
-import ConfirmModal from "@/components/shared/ConfirmModal";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/useAuth";
+import { useModal } from "@/components/providers/ModalProvider";
 
 const ESTADO_COLORS = {
   PENDIENTE: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
@@ -55,6 +55,7 @@ export default function PedimentoDetalle() {
   const { id } = useParams();
   const router = useRouter();
   const { canWrite } = useAuth();
+  const { confirm, alert } = useModal();
   
   const [pedimento, setPedimento] = useState(null);
   const [formData, setFormData] = useState({});
@@ -65,9 +66,6 @@ export default function PedimentoDetalle() {
   const [pdfError, setPdfError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [validatedFields, setValidatedFields] = useState({});
-
-  const [confirmAprobarModal, setConfirmAprobarModal] = useState({ isOpen: false });
-  const [confirmExportModal, setConfirmExportModal] = useState({ isOpen: false });
 
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [pedimentosList, setPedimentosList] = useState([]);
@@ -131,44 +129,38 @@ export default function PedimentoDetalle() {
     }
   };
 
-  const confirmAprobar = () => {
-    setConfirmAprobarModal({
-      isOpen: true,
-      title: "Aprobar pedimento",
-      message: "¿Está seguro de marcar este pedimento como Aprobado sin exportar a InterXel aún?",
+  const handleAprobar = async () => {
+    const isConfirmed = await confirm("¿Estás seguro de que deseas aprobar este pedimento?", {
+      title: "Aprobar Pedimento",
       confirmText: "Aprobar",
       isDestructive: false,
     });
-  };
+    if (!isConfirmed) return;
 
-  const handleAprobar = async () => {
     setSaving(true);
     try {
       await api.put(`/pedimentos/${id}/aprobar`);
-      alert("Pedimento aprobado correctamente");
-      setConfirmAprobarModal({ isOpen: false });
+      await alert("Pedimento aprobado correctamente");
       fetchPedimento();
     } catch (err) {
-      alert(err.response?.data?.detail || "Error al aprobar pedimento");
+      await alert(err.response?.data?.detail || "Error al aprobar pedimento", { title: "Error" });
     } finally {
       setSaving(false);
     }
   };
 
-  const confirmDownloadInterxel = () => {
-    setConfirmExportModal({
-      isOpen: true,
+  const handleDownloadInterxel = async () => {
+    const archivar = await confirm("¿Desea aprobar y generar el archivo InterXel para este pedimento?", {
       title: "Generar y Aprobar",
-      message: "¿Desea aprobar y generar el archivo InterXel para este pedimento?",
       confirmText: "Generar InterXel",
       showCheckbox: true,
       checkboxLabel: "Mover pedimento al historial después de generar",
       initialCheckboxState: true,
       isDestructive: false,
     });
-  };
+    
+    if (archivar === null) return;
 
-  const handleDownloadInterxel = async (archivar) => {
     setSaving(true);
     try {
       const response = await api.get(`/pedimentos/${id}/export_interxel?archivar=${archivar}`, {
@@ -182,11 +174,10 @@ export default function PedimentoDetalle() {
       link.click();
       link.parentNode.removeChild(link);
       
-      alert("Pedimento aprobado y escrito en InterXel exitosamente.");
-      setConfirmExportModal({ isOpen: false });
+      await alert("Pedimento aprobado y escrito en InterXel exitosamente.");
       router.push("/pedimentos");
     } catch (err) {
-      alert(err.response?.data?.detail || "Error al aprobar o generar archivo InterXel");
+      await alert(err.response?.data?.detail || "Error al aprobar o generar archivo InterXel", { title: "Error" });
     } finally {
       setSaving(false);
     }
@@ -227,9 +218,9 @@ export default function PedimentoDetalle() {
       setSaving(true);
       // Aquí enviaríamos las modificaciones
       await new Promise(r => setTimeout(r, 1000));
-      alert("Borrador guardado correctamente.");
+      await alert("Borrador guardado correctamente.");
     } catch (err) {
-      alert("Error al guardar borrador");
+      await alert("Error al guardar borrador", { title: "Error" });
     } finally {
       setSaving(false);
     }
@@ -299,7 +290,7 @@ export default function PedimentoDetalle() {
         </div>
         <div className="ml-auto flex gap-3">
           <button
-            onClick={confirmAprobar}
+            onClick={handleAprobar}
             disabled={saving}
             className="px-4 py-2 bg-white dark:bg-slate-800 border border-emerald-500 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
           >
@@ -307,7 +298,7 @@ export default function PedimentoDetalle() {
             Solo Aprobar
           </button>
           <button
-            onClick={confirmDownloadInterxel}
+            onClick={handleDownloadInterxel}
             disabled={saving}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
           >
@@ -330,7 +321,7 @@ export default function PedimentoDetalle() {
             
             <div className="flex-1 w-full bg-gray-100 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden relative min-h-[400px] flex items-center justify-center min-w-0">
               {rawText ? (
-                <div className="w-full h-full p-4 overflow-auto bg-white dark:bg-slate-900 min-w-0 max-w-full">
+                <div className="absolute inset-0 p-4 overflow-auto bg-white dark:bg-slate-900">
                   <JsonTreeViewer data={rawText} />
                 </div>
               ) : pdfUrl ? (
@@ -471,29 +462,6 @@ export default function PedimentoDetalle() {
           )}
         </div>
       </div>
-
-      <ConfirmModal 
-        isOpen={confirmAprobarModal.isOpen}
-        onClose={() => setConfirmAprobarModal({ isOpen: false })}
-        onConfirm={handleAprobar}
-        title={confirmAprobarModal.title}
-        message={confirmAprobarModal.message}
-        confirmText={confirmAprobarModal.confirmText}
-        isDestructive={confirmAprobarModal.isDestructive}
-      />
-
-      <ConfirmModal 
-        isOpen={confirmExportModal.isOpen}
-        onClose={() => setConfirmExportModal({ isOpen: false })}
-        onConfirm={(archivar) => handleDownloadInterxel(archivar)}
-        title={confirmExportModal.title}
-        message={confirmExportModal.message}
-        confirmText={confirmExportModal.confirmText}
-        isDestructive={confirmExportModal.isDestructive}
-        showCheckbox={confirmExportModal.showCheckbox}
-        checkboxLabel={confirmExportModal.checkboxLabel}
-        initialCheckboxState={confirmExportModal.initialCheckboxState}
-      />
     </MainLayout>
   );
 }

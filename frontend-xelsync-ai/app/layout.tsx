@@ -40,6 +40,7 @@ export const viewport: Viewport = {
 };
 
 import { Toaster } from 'react-hot-toast';
+import { ModalProvider } from '@/components/providers/ModalProvider';
 
 export default function RootLayout({
   children,
@@ -54,8 +55,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-200 dark:from-slate-950 dark:to-slate-900 selection:bg-blue-600 selection:text-white transition-colors duration-500">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          {children}
-          <Toaster position="top-right" />
+          <ModalProvider>
+            {children}
+            <Toaster position="top-right" />
+          </ModalProvider>
         </ThemeProvider>
       </body>
     </html>
