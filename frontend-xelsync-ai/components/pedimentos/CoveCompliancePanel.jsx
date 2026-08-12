@@ -1,28 +1,29 @@
 import { useState, useRef } from "react";
-import { FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaFileInvoice, FaBoxes, FaUpload, FaSpinner } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaFileInvoice, FaBoxes, FaUpload, FaSpinner, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadSuccess }) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const fileInputRef = useRef(null);
 
   if (!validacion) return null;
 
   const getStatusColor = (status) => {
     switch(status) {
-      case "GREEN": return "bg-green-100 text-green-800 border-green-200";
-      case "YELLOW": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "RED": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "GREEN": return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+      case "YELLOW": return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+      case "RED": return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+      default: return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700";
     }
   };
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case "GREEN": return <FaCheckCircle className="text-green-600 text-2xl" />;
-      case "YELLOW": return <FaExclamationTriangle className="text-yellow-600 text-2xl" />;
-      case "RED": return <FaTimesCircle className="text-red-600 text-2xl" />;
+      case "GREEN": return <FaCheckCircle className="text-green-600 dark:text-green-400 text-2xl" />;
+      case "YELLOW": return <FaExclamationTriangle className="text-yellow-600 dark:text-yellow-400 text-2xl" />;
+      case "RED": return <FaTimesCircle className="text-red-600 dark:text-red-400 text-2xl" />;
       default: return null;
     }
   };
@@ -63,84 +64,104 @@ export default function CoveCompliancePanel({ validacion, pedimentoId, onUploadS
   const hasMissingXmls = discrepancias?.some(disc => disc.mensaje.includes("No se encontró el XML"));
 
   return (
-    <div className={`mt-6 mb-6 p-4 rounded-lg border ${getStatusColor(status)} shadow-sm`}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`mt-6 mb-6 p-4 rounded-lg border ${getStatusColor(status)} shadow-sm transition-all duration-300`}>
+      <div 
+        className="flex items-center justify-between cursor-pointer select-none"
+        onClick={() => setIsMinimized(!isMinimized)}
+      >
         <div className="flex items-center gap-3">
           {getStatusIcon(status)}
           <div>
-            <h3 className="font-semibold text-lg">Cruce Inteligente (Compliance)</h3>
-            <p className="text-sm opacity-80">
-              Validación de valores del Pedimento vs. Documentos XML (COVE / CFDI)
-            </p>
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              Cruce Inteligente (Compliance)
+              <span className="text-sm bg-white/30 dark:bg-black/20 px-2 py-0.5 rounded-full font-medium">
+                {isMinimized ? "Minimizado" : "Expandido"}
+              </span>
+            </h3>
+            {!isMinimized && (
+              <p className="text-sm opacity-80 mt-1">
+                Validación de valores del Pedimento vs. Documentos XML (COVE / CFDI)
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex gap-4 text-sm font-medium">
-          <div className="flex items-center gap-1 bg-white/50 px-3 py-1 rounded-full">
+        <div className="flex gap-4 text-sm font-medium items-center">
+          <div className="hidden sm:flex items-center gap-1 bg-white/50 dark:bg-black/20 px-3 py-1 rounded-full">
             <FaFileInvoice className="opacity-70" />
-            <span>Facturas en Pedimento: {facturas_pedimento}</span>
+            <span>Facturas: {facturas_pedimento}</span>
           </div>
-          <div className="flex items-center gap-1 bg-white/50 px-3 py-1 rounded-full">
+          <div className="hidden sm:flex items-center gap-1 bg-white/50 dark:bg-black/20 px-3 py-1 rounded-full">
             <FaBoxes className="opacity-70" />
-            <span>XMLs cruzados en Lote: {xmls_encontrados}</span>
+            <span>XMLs: {xmls_encontrados}</span>
           </div>
+          <button 
+            className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
+            title={isMinimized ? "Expandir panel" : "Minimizar panel"}
+          >
+            {isMinimized ? <FaChevronDown /> : <FaChevronUp />}
+          </button>
         </div>
       </div>
 
-      {/* Alerta de múltiples COVEs (Punto 3) */}
-      {facturas_pedimento > 1 && (
-        <div className="mt-3 mb-2 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 p-3 rounded-lg text-sm font-medium">
-          <FaExclamationTriangle className="text-amber-500 text-lg flex-shrink-0" />
-          <div>
-            <span className="font-bold">Múltiples e-documentos/COVE detectados ({facturas_pedimento}).</span>{" "}
-            Se requiere validar la factura de cada COVE individualmente. Suba el XML o PDF de cada factura para completar la validación.
-          </div>
-        </div>
-      )}
-
-      {discrepancias && discrepancias.length > 0 ? (
-        <div className="mt-4">
-          <h4 className="font-semibold mb-2">Discrepancias Detectadas:</h4>
-          <ul className="space-y-2">
-            {discrepancias.map((disc, idx) => (
-              <li key={idx} className="bg-white/60 p-3 rounded-md text-sm flex justify-between items-center gap-2">
-                <div>
-                  <span className="font-semibold text-red-900">{disc.factura}:</span>{" "}
-                  {disc.mensaje}
-                </div>
-              </li>
-            ))}
-          </ul>
-          
-          {hasMissingXmls && (
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                type="file"
-                accept=".xml,.pdf"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleUploadCove}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="flex items-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
-              >
-                {isUploading ? <FaSpinner className="animate-spin" /> : <FaUpload />}
-                {isUploading ? "Procesando..." : "Subir Archivo COVE (XML o PDF)"}
-              </button>
-              <p className="text-xs text-gray-600 bg-white/50 px-2 py-1 rounded">
-                Sube el documento faltante (XML o PDF) para validar automáticamente.
-              </p>
+      {!isMinimized && (
+        <div className="mt-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          {/* Alerta de múltiples COVEs (Punto 3) */}
+          {facturas_pedimento > 1 && (
+            <div className="mt-3 mb-4 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-300 p-3 rounded-lg text-sm font-medium">
+              <FaExclamationTriangle className="text-amber-500 text-lg flex-shrink-0" />
+              <div>
+                <span className="font-bold">Múltiples e-documentos/COVE detectados ({facturas_pedimento}).</span>{" "}
+                Se requiere validar la factura de cada COVE individualmente. Suba el XML o PDF de cada factura para completar la validación.
+              </div>
             </div>
           )}
+
+          {discrepancias && discrepancias.length > 0 ? (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-2 opacity-90">Discrepancias Detectadas:</h4>
+              <ul className="space-y-2">
+                {discrepancias.map((disc, idx) => (
+                  <li key={idx} className="bg-white/60 dark:bg-black/20 p-3 rounded-md text-sm flex justify-between items-center gap-2 border border-black/5 dark:border-white/5">
+                    <div>
+                      <span className="font-semibold opacity-90">{disc.factura}:</span>{" "}
+                      <span className="opacity-80">{disc.mensaje}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              
+              {hasMissingXmls && (
+                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white/30 dark:bg-black/20 p-4 rounded-lg border border-black/5 dark:border-white/10">
+                  <input
+                    type="file"
+                    accept=".xml,.pdf"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleUploadCove}
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    disabled={isUploading}
+                    className="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-700 text-gray-800 dark:text-white border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? <FaSpinner className="animate-spin" /> : <FaUpload />}
+                    {isUploading ? "Procesando..." : "Subir Archivo (XML/PDF)"}
+                  </button>
+                  <p className="text-xs opacity-70">
+                    Sube el documento faltante para validar automáticamente.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            status === "GREEN" && (
+              <div className="mt-4 bg-white/60 dark:bg-black/20 p-3 rounded-md text-sm font-medium flex items-center gap-2 border border-black/5 dark:border-white/5">
+                <FaCheckCircle className="text-green-600 dark:text-green-400" />
+                <span className="opacity-90">¡Éxito! El pedimento ya tiene su COVE asociado y los valores cuadran al 100%.</span>
+              </div>
+            )
+          )}
         </div>
-      ) : (
-        status === "GREEN" && (
-          <div className="mt-4 bg-white/60 p-3 rounded-md text-sm text-green-900 font-medium flex items-center gap-2">
-            <FaCheckCircle className="text-green-600" />
-            ¡Éxito! El pedimento ya tiene su COVE asociado y los valores cuadran al 100%.
-          </div>
-        )
       )}
     </div>
   );

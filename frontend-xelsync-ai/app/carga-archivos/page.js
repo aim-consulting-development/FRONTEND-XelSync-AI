@@ -23,6 +23,7 @@ import {
   FaPause,
   FaPlay,
 } from "react-icons/fa";
+import InfoModal from "@/components/shared/InfoModal";
 
 const ALLOWED_TYPES = [
   "application/pdf",
