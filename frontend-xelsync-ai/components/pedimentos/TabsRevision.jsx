@@ -91,7 +91,7 @@ export default function TabsRevision({ pedimentoData, formData = {}, onChange, e
     });
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 animate-in fade-in">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-6 animate-in fade-in">
         {rawKeys.map(key => renderInput(key, key.replace(/^[A-Z]+_/, '').replace(/_/g, ' '), combinedData[key]))}
       </div>
     );
@@ -224,7 +224,7 @@ export default function TabsRevision({ pedimentoData, formData = {}, onChange, e
               <span>Factura: {fac.AC_factura || fac.S_factura || fac.numero_factura || `Factura ${idx + 1}`}</span>
               <span className="text-blue-500 font-mono text-sm">{fac.BA_valor_mon_fact || fac.AM_valor_mon_fact || fac.valor_dolares || "0.00"} USD</span>
             </div>
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white dark:bg-slate-900">
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 bg-white dark:bg-slate-900">
               {Object.keys(fac).filter(k => k !== "partidas").map(key => renderInput(`factura_${idx}_${key}`, key.replace(/^[A-Z]+_/, ''), fac[key]))}
             </div>
           </div>
@@ -263,11 +263,22 @@ export default function TabsRevision({ pedimentoData, formData = {}, onChange, e
                 <td className="p-2 text-gray-400 text-xs">{idx + 1}</td>
                 {/* C4: Número de parte real del material (del proveedor) */}
                 <td className="p-2 font-mono text-indigo-700 dark:text-indigo-300 font-semibold text-xs">
-                  {p.AV_material || p.AH_material || p.numero_parte || p.AW_numero_parte || p.numero_parte_proveedor || 
-                   <span className="text-gray-300 dark:text-gray-600 italic">Sin Nº Parte</span>}
+                  <input
+                    type="text"
+                    className="w-full min-w-[100px] bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:border-indigo-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 px-1 py-0.5 rounded transition-colors text-indigo-700 dark:text-indigo-300 font-semibold placeholder:font-normal placeholder:italic placeholder:text-gray-400"
+                    value={formData[`partida_${idx}_numero_parte`] !== undefined ? formData[`partida_${idx}_numero_parte`] : (p.AV_material || p.AH_material || p.numero_parte || p.AW_numero_parte || p.numero_parte_proveedor || "")}
+                    onChange={(e) => onChange(`partida_${idx}_numero_parte`, e.target.value)}
+                    placeholder="Sin Nº Parte"
+                  />
                 </td>
                 <td className="p-2 font-mono text-xs text-gray-700 dark:text-gray-300">
-                  {p.material_sap || p.codigo_producto || p.clave || "—"}
+                  <input
+                    type="text"
+                    className="w-full min-w-[80px] bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:border-indigo-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 px-1 py-0.5 rounded transition-colors text-gray-700 dark:text-gray-300 placeholder:italic placeholder:text-gray-400"
+                    value={formData[`partida_${idx}_material_sap`] !== undefined ? formData[`partida_${idx}_material_sap`] : (p.material_sap || p.codigo_producto || p.clave || "")}
+                    onChange={(e) => onChange(`partida_${idx}_material_sap`, e.target.value)}
+                    placeholder="—"
+                  />
                 </td>
                 <td className="p-2 text-xs max-w-[180px] truncate" title={p.BW_descripcion_ped || p.AU_descripcion_ped || p.descripcion || p.AX_descripcion || ""}>
                   {p.BW_descripcion_ped || p.AU_descripcion_ped || p.descripcion || p.AX_descripcion || "—"}
