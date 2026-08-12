@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaFileInvoice, FaListUl, FaHashtag, FaBuilding, FaBox, FaUser, FaCheck, FaExclamationTriangle } from "react-icons/fa";
 
-export default function TabsRevision({ pedimentoData, onChange, errores = [], validatedFields = {}, onValidateField }) {
+export default function TabsRevision({ pedimentoData, formData = {}, onChange, errores = [], validatedFields = {}, onValidateField }) {
   const [activeTab, setActiveTab] = useState("encabezado");
 
   const tabs = [
@@ -14,11 +14,13 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
     { id: "materiales", label: "Materiales", icon: <FaBox /> },
   ];
 
-  // Helper to safely render inputs
-  const renderInput = (key, label, value) => {
+  const renderInput = (key, label, originalValue) => {
     const error = errores.find(e => e.campo === key);
     const isValidated = validatedFields[key];
     const isError = !!error;
+    
+    // Override with local state if it exists
+    const currentValue = formData[key] !== undefined ? formData[key] : (originalValue || "");
     
     let inputClasses = "w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none transition-all ";
     if (isError) {
@@ -45,7 +47,7 @@ export default function TabsRevision({ pedimentoData, onChange, errores = [], va
         </label>
         <input 
           type="text"
-          value={value || ""}
+          value={currentValue}
           onChange={(e) => onChange(key, e.target.value)}
           className={inputClasses}
         />

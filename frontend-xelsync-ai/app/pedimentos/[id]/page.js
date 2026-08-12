@@ -413,9 +413,9 @@ export default function PedimentoDetalle() {
             onDismiss={handleDismissError}
           />
 
-          {/* TABS CON FORMULARIOS */}
           <TabsRevision 
             pedimentoData={pedimento.json_extraccion} 
+            formData={formData}
             onChange={handleFieldChange} 
             errores={pedimento.resultado_validacion || []}
             validatedFields={validatedFields}
