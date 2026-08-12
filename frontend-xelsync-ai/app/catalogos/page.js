@@ -59,7 +59,8 @@ const TABS = Object.keys(TAB_CONFIG);
 export default function CatalogosPage() {
   const { canWrite } = useAuth();
   const { confirm, alert } = useModal();
-  const [activeTab, setActiveTab] = useState("Materiales");
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [activeTab, setActiveTab] = useState("Clientes");
   const [items, setItems] = useState([]);
   const [totales, setTotales] = useState({ Materiales: 0, Proveedores: 0, Clientes: 0, Fracciones: 0 });
   const [loading, setLoading] = useState(false);
@@ -78,12 +79,19 @@ export default function CatalogosPage() {
   const PAGE_SIZE = 15;
   const config = TAB_CONFIG[activeTab];
 
-  // Cargar totales de todas las categorías al inicio
+  // Cargar totales de todas las categorías al inicio o cuando cambia selectedCliente
   useEffect(() => {
     const fetchTotales = async () => {
       try {
         const results = await Promise.allSettled(
-          TABS.map((tab) => api.get(`${TAB_CONFIG[tab].endpoint}?size=1`))
+          TABS.map((tab) => {
+            const endpoint = TAB_CONFIG[tab].endpoint;
+            let url = `${endpoint}?size=1`;
+            if (selectedCliente && tab !== "Clientes") {
+              url += `&cliente_id=${selectedCliente.id}`;
+            }
+            return api.get(url);
+          })
         );
         const newTotales = {};
         TABS.forEach((tab, i) => {
@@ -99,7 +107,7 @@ export default function CatalogosPage() {
       }
     };
     fetchTotales();
-  }, []);
+  }, [selectedCliente]);
 
   // Cargar datos del tab activo
   const fetchData = useCallback(async () => {
@@ -109,6 +117,7 @@ export default function CatalogosPage() {
         page: currentPage,
         size: PAGE_SIZE,
         ...(searchTerm ? { q: searchTerm } : {}),
+        ...(selectedCliente && activeTab !== "Clientes" ? { cliente_id: selectedCliente.id } : {}),
       });
       const res = await api.get(`${config.endpoint}?${params}`);
       const data = res.data;
@@ -121,7 +130,7 @@ export default function CatalogosPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage, searchTerm]);
+  }, [activeTab, currentPage, searchTerm, selectedCliente]);
 
   useEffect(() => {
     fetchData();
@@ -179,7 +188,11 @@ export default function CatalogosPage() {
       if (selectedItem) {
         await api.put(`${config.endpoint}/${selectedItem.id}`, formData);
       } else {
-        await api.post(config.endpoint, formData);
+        const createData = { ...formData };
+        if (selectedCliente && activeTab !== "Clientes") {
+          createData.cliente_id = selectedCliente.id;
+        }
+        await api.post(config.endpoint, createData);
         setTotales((prev) => ({ ...prev, [activeTab]: (prev[activeTab] || 0) + 1 }));
       }
       setShowModal(false);
@@ -195,12 +208,20 @@ export default function CatalogosPage() {
     e.preventDefault();
     if (!uploadFile) return;
     
-    // Simulate upload or actual endpoint if exists
-    // const formData = new FormData();
-    // formData.append('file', uploadFile);
-    // await api.post(`${config.endpoint}/upload`, formData);
-    
-    await alert(`Archivo "${uploadFile.name}" preparado para procesar en el catálogo de ${activeTab}. (Funcionalidad simulada para la demo)`);
+    if (activeTab === "Materiales") {
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+        if (selectedCliente) formData.append('cliente_id', selectedCliente.id);
+        await api.post(`${config.endpoint}/importar-excel`, formData);
+        await alert(`Archivo "${uploadFile.name}" procesado correctamente en el catálogo de Materiales.`);
+        fetchData();
+      } catch (err) {
+        await alert(err.response?.data?.detail || "Error al procesar el archivo.");
+      }
+    } else {
+      await alert(`Archivo "${uploadFile.name}" preparado para procesar en el catálogo de ${activeTab}. (Funcionalidad simulada para la demo)`);
+    }
     setShowUploadModal(false);
     setUploadFile(null);
   };
@@ -231,7 +252,21 @@ export default function CatalogosPage() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catálogos</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Administración de catálogos maestros</p>
+            {selectedCliente ? (
+              <div className="flex items-center gap-2 mt-2">
+                <button 
+                  onClick={() => { setSelectedCliente(null); setActiveTab("Clientes"); }}
+                  className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 px-3 py-1.5 rounded-full transition-all"
+                >
+                  <FaChevronLeft size={12} /> Volver a Clientes
+                </button>
+                <span className="text-gray-600 dark:text-gray-400 font-medium px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-sm shadow-sm border border-gray-200 dark:border-slate-600">
+                  <span className="opacity-70 mr-1">Cliente:</span> {selectedCliente.nombre}
+                </span>
+              </div>
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Selecciona un cliente para administrar sus catálogos</p>
+            )}
           </div>
           <InfoModal title="Módulo de Catálogos (Trade Compliance)">
             <p>
@@ -268,7 +303,7 @@ export default function CatalogosPage() {
 
       {/* KPIs / Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        {TABS.map((tab) => (
+        {(selectedCliente ? TABS.filter(t => t !== "Clientes") : ["Clientes"]).map((tab) => (
           <div
             key={tab}
             className={`bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 border transition-all duration-300 cursor-pointer ${
@@ -290,7 +325,7 @@ export default function CatalogosPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 mb-6">
         {/* Tab bar */}
         <div className="flex flex-wrap border-b border-gray-200 dark:border-slate-700">
-          {TABS.map((tab) => (
+          {(selectedCliente ? TABS.filter(t => t !== "Clientes") : ["Clientes"]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -370,7 +405,17 @@ export default function CatalogosPage() {
                 </tr>
               ) : (
                 sortedItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                  <tr 
+                    key={item.id} 
+                    className={`hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${activeTab === "Clientes" && !selectedCliente ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20" : ""}`}
+                    onClick={(e) => {
+                      // Prevent row click if clicking on an action button inside the row
+                      if (activeTab === "Clientes" && !selectedCliente && !e.target.closest("button")) {
+                        setSelectedCliente(item);
+                        setActiveTab("Materiales");
+                      }
+                    }}
+                  >
                     {config.fields.map((field) => (
                       <td key={field} className="p-4">
                         {field === "clave" ? (
@@ -529,8 +574,18 @@ export default function CatalogosPage() {
               </button>
             </div>
             <form onSubmit={handleUploadSubmit} className="p-4 sm:p-6 flex flex-col gap-4">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 text-center">
                 Sube un archivo de Excel (.xlsx, .xls) o CSV con los registros de <strong>{activeTab}</strong>.
+              </div>
+              <div className="flex justify-center mb-2">
+                <a
+                  href={`/templates/plantilla_${activeTab.toLowerCase()}.xlsx`}
+                  download
+                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1"
+                >
+                  <FaFileExport size={12} />
+                  Descargar plantilla de {activeTab}
+                </a>
               </div>
               <div className="relative border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-gray-50 dark:bg-slate-900/30">
                 <FaFileExport className="text-4xl text-gray-400 mb-3" />
