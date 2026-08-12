@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import InfoModal from "@/components/shared/InfoModal";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -17,7 +18,6 @@ import {
   FaExclamationTriangle,
   FaClock,
   FaDownload,
-  FaCheckSquare,
   FaTrashAlt,
 } from "react-icons/fa";
 
@@ -66,7 +66,7 @@ function isFechaFueraDeRango(item) {
 
 export default function PedimentosPage() {
   const router = useRouter();
-  const { canWrite } = useAuth();
+  const { canWrite, isAdmin } = useAuth();
   
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,10 @@ export default function PedimentosPage() {
 
   const [operadores, setOperadores] = useState([]);
   const [clientes, setClientes] = useState([]);
-  const { isAdmin } = useAuth();
+
+  // Modal states
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState({ isOpen: false });
+  const [confirmExportModal, setConfirmExportModal] = useState({ isOpen: false });
 
   // ─── Selección para InterXel masivo y Borrado ───
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -121,9 +124,9 @@ export default function PedimentosPage() {
         params.append("estado", estadoFilter);
       } else {
         if (tabMode === "ACTIVOS") {
-          params.append("exclude_estado", "INTERXEL_GENERADO");
+          params.append("exclude_estado", "ARCHIVADO");
         } else if (tabMode === "HISTORIAL") {
-          params.append("estado", "INTERXEL_GENERADO");
+          params.append("estado", "ARCHIVADO");
         }
       }
       if (tipoFilter) params.append("tipo_operacion", tipoFilter);
@@ -175,12 +178,26 @@ export default function PedimentosPage() {
     }
   };
 
-  const handleExportLote = async () => {
+  const confirmExportLote = () => {
     if (selectedIds.size === 0) return;
+    setConfirmExportModal({
+      isOpen: true,
+      title: "Generar InterXel Masivo",
+      message: `¿Estás seguro de que deseas generar el InterXel para ${selectedIds.size} pedimento(s) seleccionado(s)?`,
+      confirmText: "Generar InterXel",
+      showCheckbox: true,
+      checkboxLabel: "Mover pedimento(s) al historial después de generar",
+      initialCheckboxState: true,
+      isDestructive: false,
+    });
+  };
+
+  const handleExportLote = async (archivar) => {
     setExportingLote(true);
     try {
       const res = await api.post("/pedimentos/interxel/lote", {
-        pedimento_ids: [...selectedIds]
+        pedimento_ids: [...selectedIds],
+        archivar: archivar
       }, { responseType: "blob" });
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -193,6 +210,7 @@ export default function PedimentosPage() {
       window.URL.revokeObjectURL(url);
 
       setSelectedIds(new Set());
+      setConfirmExportModal({ isOpen: false });
       fetchPedimentos();
     } catch (err) {
       console.error(err);
@@ -202,16 +220,25 @@ export default function PedimentosPage() {
     }
   };
 
-  const handleDeleteLote = async () => {
+  const confirmDeleteLote = () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`¿Estás seguro de que deseas eliminar ${selectedIds.size} pedimento(s)? Esta acción los ocultará del sistema.`)) return;
-    
+    setConfirmDeleteModal({
+      isOpen: true,
+      title: "Borrar pedimentos",
+      message: `¿Estás seguro de que deseas eliminar ${selectedIds.size} pedimento(s)? Esta acción los ocultará del sistema.`,
+      confirmText: "Borrar",
+      isDestructive: true,
+    });
+  };
+
+  const handleDeleteLote = async () => {
     setDeletingLote(true);
     try {
       await api.delete("/pedimentos/lote", {
         data: { pedimento_ids: [...selectedIds] }
       });
       setSelectedIds(new Set());
+      setConfirmDeleteModal({ isOpen: false });
       fetchPedimentos();
     } catch (err) {
       console.error(err);
@@ -239,7 +266,7 @@ export default function PedimentosPage() {
         {selectedIds.size > 0 && (
           <div className="flex gap-2">
             <button
-              onClick={handleDeleteLote}
+              onClick={confirmDeleteLote}
               disabled={deletingLote}
               className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-xl transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
               title="Borrar seleccionados"
@@ -248,7 +275,7 @@ export default function PedimentosPage() {
               Borrar ({selectedIds.size})
             </button>
             <button
-              onClick={handleExportLote}
+              onClick={confirmExportLote}
               disabled={exportingLote}
               className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
             >
@@ -259,7 +286,6 @@ export default function PedimentosPage() {
         )}
       </div>
 
-      {/* Tabs principales: Activos vs Historial */}
       <div className="flex gap-4 border-b border-gray-200 dark:border-slate-700 mb-6">
         <button
           onClick={() => { setTabMode("ACTIVOS"); setPage(1); }}
@@ -283,7 +309,6 @@ export default function PedimentosPage() {
         </button>
       </div>
 
-      {/* Pestañas por cliente */}
       {clientes.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
           <button
@@ -326,7 +351,6 @@ export default function PedimentosPage() {
       )}
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-        {/* Filtros */}
         <div className="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4 items-center justify-between">
           <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px] max-w-md relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -383,7 +407,6 @@ export default function PedimentosPage() {
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto min-h-[400px]">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
@@ -501,7 +524,6 @@ export default function PedimentosPage() {
           )}
         </div>
 
-        {/* Paginación */}
         {totalPages > 0 && (
           <div className="p-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50/50 dark:bg-slate-900/50">
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -532,6 +554,29 @@ export default function PedimentosPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmDeleteModal.isOpen}
+        onClose={() => setConfirmDeleteModal({ isOpen: false })}
+        onConfirm={handleDeleteLote}
+        title={confirmDeleteModal.title}
+        message={confirmDeleteModal.message}
+        confirmText={confirmDeleteModal.confirmText}
+        isDestructive={confirmDeleteModal.isDestructive}
+      />
+
+      <ConfirmModal 
+        isOpen={confirmExportModal.isOpen}
+        onClose={() => setConfirmExportModal({ isOpen: false })}
+        onConfirm={(archivar) => handleExportLote(archivar)}
+        title={confirmExportModal.title}
+        message={confirmExportModal.message}
+        confirmText={confirmExportModal.confirmText}
+        isDestructive={confirmExportModal.isDestructive}
+        showCheckbox={confirmExportModal.showCheckbox}
+        checkboxLabel={confirmExportModal.checkboxLabel}
+        initialCheckboxState={confirmExportModal.initialCheckboxState}
+      />
     </MainLayout>
   );
 }
