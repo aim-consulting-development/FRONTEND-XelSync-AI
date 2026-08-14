@@ -10,6 +10,7 @@ import TabsRevision from "@/components/pedimentos/TabsRevision";
 import JsonTreeViewer from "@/components/pedimentos/JsonTreeViewer";
 import CoveCompliancePanel from "@/components/pedimentos/CoveCompliancePanel";
 import GlosaCompliancePanel from "@/components/pedimentos/GlosaCompliancePanel";
+import InterxelProgressModal from '@/components/pedimentos/InterxelProgressModal';
 import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/useAuth";
 import { useModal } from "@/components/providers/ModalProvider";
@@ -66,6 +67,9 @@ export default function PedimentoDetalle() {
   const [pdfError, setPdfError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [validatedFields, setValidatedFields] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState('loading'); // loading, success, error
+  const [modalError, setModalError] = useState('');
 
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [pedimentosList, setPedimentosList] = useState([]);
@@ -161,10 +165,15 @@ export default function PedimentoDetalle() {
     
     if (archivar === null) return;
 
+    setModalOpen(true);
+    setModalStatus('loading');
+    setModalError('');
     setSaving(true);
+    
     try {
       const response = await api.get(`/pedimentos/${id}/export_interxel?archivar=${archivar}`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        timeout: 120000 // 2 minutes timeout just in case
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -174,12 +183,21 @@ export default function PedimentoDetalle() {
       link.click();
       link.parentNode.removeChild(link);
       
-      await alert("Pedimento aprobado y escrito en InterXel exitosamente.");
-      router.push("/pedimentos");
+      setModalStatus('success');
+      // Esperamos a que el usuario cierre el modal para redirigir
     } catch (err) {
-      await alert(err.response?.data?.detail || "Error al aprobar o generar archivo InterXel", { title: "Error" });
+      console.error(err);
+      setModalStatus('error');
+      setModalError(err.response?.data?.detail || "Error al comunicarse con el servidor o tiempo de espera agotado.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    if (modalStatus === 'success') {
+      router.push("/pedimentos");
     }
   };
 
@@ -462,6 +480,13 @@ export default function PedimentoDetalle() {
           )}
         </div>
       </div>
+
+      <InterxelProgressModal 
+        isOpen={modalOpen} 
+        status={modalStatus} 
+        error={modalError} 
+        onClose={handleModalClose} 
+      />
     </MainLayout>
   );
 }
