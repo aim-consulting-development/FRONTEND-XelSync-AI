@@ -1,7 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaFileInvoice, FaListUl, FaHashtag, FaBuilding, FaBox, FaUser, FaCheck, FaExclamationTriangle } from "react-icons/fa";
 
+const EditableCell = ({ value, onChange, placeholder, type = "text", className = "" }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (editValue !== value) {
+      onChange(editValue);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        autoFocus
+        type={type}
+        className={`w-full min-w-[80px] bg-white dark:bg-slate-700 text-gray-900 dark:text-white border-b-2 border-blue-500 focus:outline-none px-1 py-0.5 rounded shadow-sm ${className}`}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleBlur();
+          if (e.key === 'Escape') {
+            setEditValue(value);
+            setIsEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <div 
+      className={`cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700 px-1 py-0.5 rounded transition-colors min-h-[24px] flex items-center ${!value ? 'text-gray-400 italic' : ''} ${className}`}
+      onDoubleClick={() => setIsEditing(true)}
+      title="Doble clic para editar"
+    >
+      {value || placeholder || "—"}
+    </div>
+  );
+};
+
 export default function TabsRevision({ pedimentoData, formData = {}, onChange, errores = [], validatedFields = {}, onValidateField }) {
+
   const [activeTab, setActiveTab] = useState("encabezado");
 
   const tabs = [
@@ -241,9 +288,9 @@ export default function TabsRevision({ pedimentoData, formData = {}, onChange, e
     if (partidas.length === 0) return <p className="text-gray-500 p-4">No se detectaron partidas.</p>;
 
     return (
-      <div className="p-4 max-h-[60vh] overflow-y-auto overflow-x-auto animate-in fade-in">
-        <table className="w-full text-left border-collapse min-w-[900px] relative">
-          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-slate-800">
+      <div className="p-1 h-[65vh] overflow-y-auto overflow-x-auto animate-in fade-in">
+        <table className="w-full text-left border-collapse min-w-[1000px] relative">
+          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-slate-800 shadow-sm">
             <tr className="border-b border-gray-200 dark:border-slate-700 text-xs uppercase text-gray-500">
               <th className="p-2">#</th>
               {/* C4: Número de Parte del Material — columna prominente */}
@@ -263,39 +310,63 @@ export default function TabsRevision({ pedimentoData, formData = {}, onChange, e
                 <td className="p-2 text-gray-400 text-xs">{idx + 1}</td>
                 {/* C4: Número de parte real del material (del proveedor) */}
                 <td className="p-2 font-mono text-indigo-700 dark:text-indigo-300 font-semibold text-xs">
-                  <input
-                    type="text"
-                    className="w-full min-w-[100px] bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:border-indigo-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 px-1 py-0.5 rounded transition-colors text-indigo-700 dark:text-indigo-300 font-semibold placeholder:font-normal placeholder:italic placeholder:text-gray-400"
+                  <EditableCell
                     value={formData[`partida_${idx}_numero_parte`] !== undefined ? formData[`partida_${idx}_numero_parte`] : (p.AV_material || p.AH_material || p.numero_parte || p.AW_numero_parte || p.numero_parte_proveedor || "")}
-                    onChange={(e) => onChange(`partida_${idx}_numero_parte`, e.target.value)}
+                    onChange={(val) => onChange(`partida_${idx}_numero_parte`, val)}
                     placeholder="Sin Nº Parte"
                   />
                 </td>
                 <td className="p-2 font-mono text-xs text-gray-700 dark:text-gray-300">
-                  <input
-                    type="text"
-                    className="w-full min-w-[80px] bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:border-indigo-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 px-1 py-0.5 rounded transition-colors text-gray-700 dark:text-gray-300 placeholder:italic placeholder:text-gray-400"
+                  <EditableCell
                     value={formData[`partida_${idx}_material_sap`] !== undefined ? formData[`partida_${idx}_material_sap`] : (p.material_sap || p.codigo_producto || p.clave || "")}
-                    onChange={(e) => onChange(`partida_${idx}_material_sap`, e.target.value)}
+                    onChange={(val) => onChange(`partida_${idx}_material_sap`, val)}
                     placeholder="—"
                   />
                 </td>
-                <td className="p-2 text-xs max-w-[180px] truncate" title={p.BW_descripcion_ped || p.AU_descripcion_ped || p.descripcion || p.AX_descripcion || ""}>
-                  {p.BW_descripcion_ped || p.AU_descripcion_ped || p.descripcion || p.AX_descripcion || "—"}
+                <td className="p-2 text-xs max-w-[180px]">
+                  <EditableCell
+                    className="truncate"
+                    value={formData[`partida_${idx}_descripcion`] !== undefined ? formData[`partida_${idx}_descripcion`] : (p.BW_descripcion_ped || p.AU_descripcion_ped || p.descripcion || p.AX_descripcion || "")}
+                    onChange={(val) => onChange(`partida_${idx}_descripcion`, val)}
+                    placeholder="—"
+                  />
                 </td>
                 <td className="p-2">
-                  {p.AY_cantidad_um_base || p.AK_cantidad_um_base || p.cantidad_umt || "0"}
-                  <span className="text-gray-400 text-xs ml-1">{p.unidad_medida_tarifa || p.unidad_medida || ""}</span>
+                  <EditableCell
+                    type="number"
+                    value={formData[`partida_${idx}_cantidad`] !== undefined ? formData[`partida_${idx}_cantidad`] : (p.AY_cantidad_um_base || p.AK_cantidad_um_base || p.cantidad_umt || "0")}
+                    onChange={(val) => onChange(`partida_${idx}_cantidad`, val)}
+                    placeholder="0"
+                  />
                 </td>
-                <td className="p-2 font-mono text-blue-600 dark:text-blue-400">${p.BB_valor_usd || p.AN_valor_usd || p.valor_dolares || "0.00"}</td>
-                <td className="p-2 font-mono">{p.BD_fraccion || p.AO_fraccion || p.fraccion_arancelaria || "—"}</td>
-                <td className="p-2">{p.BE_pais_origen || p.AP_pais_destino || p.pais_origen_destino || "—"}</td>
+                <td className="p-2 font-mono text-blue-600 dark:text-blue-400">
+                  <EditableCell
+                    type="number"
+                    value={formData[`partida_${idx}_valor_usd`] !== undefined ? formData[`partida_${idx}_valor_usd`] : (p.BB_valor_usd || p.AN_valor_usd || p.valor_dolares || "0.00")}
+                    onChange={(val) => onChange(`partida_${idx}_valor_usd`, val)}
+                    placeholder="0.00"
+                  />
+                </td>
+                <td className="p-2 font-mono">
+                  <EditableCell
+                    value={formData[`partida_${idx}_fraccion`] !== undefined ? formData[`partida_${idx}_fraccion`] : (p.BD_fraccion || p.AO_fraccion || p.fraccion_arancelaria || "")}
+                    onChange={(val) => onChange(`partida_${idx}_fraccion`, val)}
+                    placeholder="—"
+                  />
+                </td>
                 <td className="p-2">
-                  {p.BK_forma_pago === 21 || p.BK_forma_pago === "21" ? (
-                    <span className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded text-xs font-bold">21 - Crédito IVA</span>
-                  ) : (
-                    <span className="text-gray-600 dark:text-gray-400">{p.BK_forma_pago || "—"}</span>
-                  )}
+                  <EditableCell
+                    value={formData[`partida_${idx}_pais`] !== undefined ? formData[`partida_${idx}_pais`] : (p.BE_pais_origen || p.AP_pais_destino || p.pais_origen_destino || "")}
+                    onChange={(val) => onChange(`partida_${idx}_pais`, val)}
+                    placeholder="—"
+                  />
+                </td>
+                <td className="p-2">
+                  <EditableCell
+                    value={formData[`partida_${idx}_forma_pago`] !== undefined ? formData[`partida_${idx}_forma_pago`] : (p.BK_forma_pago || "")}
+                    onChange={(val) => onChange(`partida_${idx}_forma_pago`, val)}
+                    placeholder="—"
+                  />
                 </td>
               </tr>
             ))}

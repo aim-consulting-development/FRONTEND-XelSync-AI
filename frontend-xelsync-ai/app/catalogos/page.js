@@ -579,7 +579,7 @@ export default function CatalogosPage() {
               </div>
               <div className="flex justify-center mb-2">
                 <a
-                  href={`/templates/plantilla_${activeTab.toLowerCase()}.xlsx`}
+                  href={`/templates/plantilla_${activeTab.toLowerCase()}.csv`}
                   download
                   className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1"
                 >
